@@ -6,32 +6,31 @@
 <title>דשבורד מכירות · לקסוס הרצליה</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap');
-
 :root{
   --bg:#0d1117;--panel:#161b22;--panel-2:#1c2230;--line:#262d3a;
   --ink:#e9eef5;--ink-dim:#8b97a8;--accent:#c8a04f;--accent-soft:#d8b878;
-  --ok:#3fb27f;--warn:#e0a13c;--alert:#e2564d;--shadow:0 18px 50px -20px rgba(0,0,0,.7);
+  --ok:#3fb27f;--warn:#e0a13c;--alert:#e2564d;--ship:#5aa9e6;--dup:#d98ec0;
+  --shadow:0 18px 50px -20px rgba(0,0,0,.7);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Heebo',sans-serif;background:
   radial-gradient(1100px 600px at 90% -10%, rgba(200,160,79,.10), transparent 60%),
   radial-gradient(900px 500px at -10% 110%, rgba(63,178,127,.06), transparent 60%),var(--bg);
   color:var(--ink);min-height:100vh;padding:28px clamp(14px,4vw,48px);line-height:1.5}
-.wrap{max-width:1240px;margin:0 auto}
+.wrap{max-width:1280px;margin:0 auto}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px;padding-bottom:22px;border-bottom:1px solid var(--line);margin-bottom:26px}
 .brand{display:flex;flex-direction:column;gap:6px}
 .brand .kicker{font-size:12px;letter-spacing:.32em;color:var(--accent);font-weight:700}
 h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:clamp(26px,4vw,40px);letter-spacing:-.5px}
 .sub{color:var(--ink-dim);font-size:14px}
-.updated{font-size:12.5px;color:var(--ink-dim);text-align:left;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
-.updated b{color:var(--ink);font-weight:600}
+.updated{font-size:12.5px;color:var(--ink-dim);text-align:left;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.btn-row{display:flex;gap:8px}
 .refresh{background:var(--panel);border:1px solid var(--line);color:var(--accent-soft);padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:.18s}
 .refresh:hover{border-color:var(--accent);color:var(--ink)}
 .refresh.spin svg{animation:rot .8s linear infinite}
 @keyframes rot{to{transform:rotate(360deg)}}
 .refresh svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
 
-/* ===== פאנל ייבוא ===== */
 .import-panel{display:none;background:linear-gradient(160deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:18px;padding:22px 24px;margin-bottom:24px;box-shadow:var(--shadow)}
 .import-panel.open{display:block;animation:fadeIn .25s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
@@ -46,26 +45,29 @@ h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:clamp(26px,4vw
 .dropzone svg{width:34px;height:34px;stroke:var(--accent);fill:none;stroke-width:1.6}
 .dropzone span{font-size:14px;font-weight:500}
 #importResult{margin-top:18px}
+.imp-block{margin-bottom:20px}
+.imp-block h3{font-size:14px;font-weight:700;margin-bottom:10px}
 .imp-summary{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;font-size:13.5px}
 .imp-pill{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:600}
-.imp-pill.ok{color:var(--ok)} .imp-pill.dup{color:#e0a9cf} .imp-pill.err{color:var(--alert)}
-.imp-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.imp-pill.ok{color:var(--ok)} .imp-pill.dup{color:var(--dup)} .imp-pill.err{color:var(--alert)} .imp-pill.ship{color:var(--ship)}
+.imp-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .btn-copy{background:var(--accent);border:none;color:#1a1205;font-weight:700;padding:10px 20px;border-radius:999px;cursor:pointer;font-family:inherit;font-size:13.5px;transition:.15s}
 .btn-copy:hover{background:var(--accent-soft)}
 .btn-copy.done{background:var(--ok);color:#062014}
-.paste-box{width:100%;background:#0a0e14;border:1px solid var(--line);border-radius:12px;color:var(--ink);font-family:'Courier New',monospace;font-size:13px;padding:14px;direction:ltr;text-align:left;white-space:pre;overflow:auto;max-height:220px}
+.paste-box{width:100%;background:#0a0e14;border:1px solid var(--line);border-radius:12px;color:var(--ink);font-family:'Courier New',monospace;font-size:13px;padding:14px;direction:ltr;text-align:left;white-space:pre;overflow:auto;max-height:200px}
 .imp-note{font-size:12.5px;color:var(--ink-dim);margin-top:10px;line-height:1.6}
-.imp-note b{color:#e0a9cf}
+.imp-note b{color:var(--accent-soft)}
+.ship-line{background:var(--panel-2);border:1px solid var(--line);border-inline-start:3px solid var(--ship);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13.5px;line-height:1.7}
+.ship-line b{color:var(--ship)}
 
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:24px}
 .kpi{background:linear-gradient(160deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:16px;padding:18px 20px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
 .kpi::before{content:'';position:absolute;inset:0 auto 0 0;width:3px;background:var(--accent);opacity:.8}
 .kpi .lbl{font-size:12.5px;color:var(--ink-dim);font-weight:500;margin-bottom:8px}
-.kpi .val{font-family:'Frank Ruhl Libre',serif;font-size:34px;font-weight:900;line-height:1}
-.kpi.alert .val{color:var(--alert)}
-.kpi.alert::before{background:var(--alert)}
-.kpi.dup .val{color:#d98ec0}
-.kpi.dup::before{background:#d98ec0}
+.kpi .val{font-family:'Frank Ruhl Libre',serif;font-size:32px;font-weight:900;line-height:1}
+.kpi.alert .val{color:var(--alert)}.kpi.alert::before{background:var(--alert)}
+.kpi.ship .val{color:var(--ship)}.kpi.ship::before{background:var(--ship)}
+.kpi.ok .val{color:var(--ok)}.kpi.ok::before{background:var(--ok)}
 
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
 .chip{background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:500;cursor:pointer;transition:.18s;font-family:inherit}
@@ -76,38 +78,76 @@ h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:clamp(26px,4vw
 .search input:focus{border-color:var(--accent)}
 .search svg{position:absolute;inset-inline-end:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--ink-dim);fill:none;stroke-width:2}
 
-.tablecard{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+.month-block{margin-bottom:20px}
+.month-bar{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:13px 18px;cursor:pointer;transition:.15s;user-select:none}
+.month-bar:hover{border-color:var(--accent)}
+.month-bar .caret{transition:transform .2s;color:var(--accent);font-size:13px}
+.month-block.collapsed .caret{transform:rotate(-90deg)}
+.month-bar .mname{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:18px}
+.month-bar .mcount{color:var(--ink-dim);font-size:13px;font-weight:500}
+.month-bar .mmini{margin-inline-start:auto;display:flex;gap:6px;font-size:11.5px;flex-wrap:wrap}
+.mmini span{padding:2px 9px;border-radius:999px;font-weight:700}
+.mmini .s-prep{background:rgba(200,160,79,.14);color:var(--accent-soft)}
+.mmini .s-ship{background:rgba(90,169,230,.14);color:var(--ship)}
+.mmini .s-done{background:rgba(63,178,127,.14);color:var(--ok)}
+.mmini .s-flag{background:rgba(226,86,77,.16);color:var(--alert)}
+.month-block.collapsed .tablecard{display:none}
+
+.tablecard{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);margin-top:10px}
 table{width:100%;border-collapse:collapse}
-thead th{background:var(--panel-2);text-align:right;padding:14px 18px;font-size:12.5px;letter-spacing:.04em;color:var(--ink-dim);font-weight:700;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;white-space:nowrap}
+thead th{background:var(--panel-2);text-align:right;padding:13px 16px;font-size:12px;letter-spacing:.03em;color:var(--ink-dim);font-weight:700;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;white-space:nowrap}
 thead th:hover{color:var(--accent)}
-thead th .arr{font-size:10px;opacity:.6}
-tbody td{padding:15px 18px;border-bottom:1px solid var(--line);font-size:14.5px}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 tbody tr{transition:background .15s}
 tbody tr:hover{background:rgba(200,160,79,.05)}
 .ordnum{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent-soft);letter-spacing:.02em}
 .cust{font-weight:500}
-.agent-tag{display:inline-flex;align-items:center;gap:7px}
+.agent-tag{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
-.when{color:var(--ink-dim);font-size:13.5px;font-variant-numeric:tabular-nums}
+.when{color:var(--ink-dim);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .when b{color:var(--ink);font-weight:600}
-.days{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-variant-numeric:tabular-nums}
-.badge{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.b-ok{background:rgba(63,178,127,.14);color:var(--ok)}
-.b-warn{background:rgba(224,161,60,.14);color:var(--warn)}
-.b-alert{background:rgba(226,86,77,.16);color:var(--alert)}
-tr.row-alert{background:rgba(226,86,77,.06)}
-tr.row-alert:hover{background:rgba(226,86,77,.10)}
-tr.row-dup{background:rgba(217,142,192,.09);box-shadow:inset 3px 0 0 #d98ec0}
-tr.row-dup:hover{background:rgba(217,142,192,.15)}
-.dup-tag{display:inline-block;margin-inline-start:8px;background:rgba(217,142,192,.18);color:#e0a9cf;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;vertical-align:middle}
+.sub2{color:var(--ink-dim);font-size:11.5px}
+.status{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;padding:4px 11px;border-radius:999px;white-space:nowrap}
+.st-prep{background:rgba(200,160,79,.14);color:var(--accent-soft)}
+.st-ship{background:rgba(90,169,230,.14);color:var(--ship)}
+.st-ship-warn{background:rgba(224,161,60,.16);color:var(--warn)}
+.st-ship-alert{background:rgba(226,86,77,.16);color:var(--alert)}
+.st-done{background:rgba(63,178,127,.14);color:var(--ok)}
+tr.row-flag{background:rgba(226,86,77,.06)}
+tr.row-flag:hover{background:rgba(226,86,77,.10)}
+tr.row-done{opacity:.62}
+tr.row-dup{box-shadow:inset 3px 0 0 var(--dup);background:rgba(217,142,192,.07)}
+.dup-tag{display:inline-block;margin-inline-start:8px;background:rgba(217,142,192,.18);color:#e0a9cf;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.btn-deliver{background:none;border:1px solid var(--line);color:var(--ink-dim);font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+.btn-deliver:hover{border-color:var(--ok);color:var(--ok)}
+.plate{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink-dim);direction:ltr;display:inline-block}
 
 .state{text-align:center;padding:48px 20px;color:var(--ink-dim)}
 .state.err{color:var(--alert)}
 .spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;margin:0 auto 14px;animation:rot 1s linear infinite}
-footer{margin-top:22px;text-align:center;color:var(--ink-dim);font-size:12px}
+footer{margin-top:22px;text-align:center;color:var(--ink-dim);font-size:12px;line-height:1.8}
 footer b{color:var(--accent-soft)}
-@media(max-width:640px){.when .time{display:none}thead th,tbody td{padding:11px 10px;font-size:13px}.search{margin-inline-start:0;width:100%}.search input{width:100%}}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:linear-gradient(160deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:18px;padding:26px;max-width:440px;width:100%;box-shadow:var(--shadow)}
+.modal h3{font-family:'Frank Ruhl Libre',serif;font-size:20px;font-weight:900;margin-bottom:6px}
+.modal p{color:var(--ink-dim);font-size:13.5px;line-height:1.7;margin-bottom:16px}
+.modal .field{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+.modal label{font-size:13px;color:var(--ink-dim);min-width:90px}
+.modal input{flex:1;background:#0a0e14;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 12px;font-family:inherit;font-size:13.5px;direction:ltr;text-align:left}
+.modal .mono{background:#0a0e14;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:'Courier New',monospace;font-size:13px;direction:ltr;text-align:left;color:var(--ink);margin-bottom:6px}
+.modal-actions{display:flex;gap:10px;margin-top:6px}
+.modal-actions button{flex:1;padding:10px;border-radius:999px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;border:none}
+.m-copy{background:var(--ok);color:#062014}
+.m-cancel{background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim)}
+
+@media(max-width:760px){
+  .hide-sm{display:none}
+  thead th,tbody td{padding:10px 8px;font-size:12.5px}
+  .search{margin-inline-start:0;width:100%}.search input{width:100%}
+}
 </style>
 </head>
 <body>
@@ -116,10 +156,10 @@ footer b{color:var(--accent-soft)}
     <div class="brand">
       <span class="kicker">LEXUS · מעקב עסקאות</span>
       <h1>דשבורד מכירות</h1>
-      <span class="sub">ריכוז הזמנות שנכנסו להכנה — לפי נציג, לקוח ומספר הזמנה</span>
+      <span class="sub">מחזור חיים מלא — הכנה · שילוח · מסירה · מקובץ לפי חודש</span>
     </div>
     <div class="updated">
-      <div style="display:flex;gap:8px">
+      <div class="btn-row">
         <button class="refresh" id="importBtn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ייבוא ממיילים</button>
         <button class="refresh" id="refreshBtn"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> רענון</button>
       </div>
@@ -127,13 +167,12 @@ footer b{color:var(--accent-soft)}
     </div>
   </header>
 
-  <!-- פאנל ייבוא ממיילים -->
   <div class="import-panel" id="importPanel">
     <div class="import-head">
-      <h2>ייבוא הזמנות מקבצי מייל</h2>
+      <h2>ייבוא ממיילים</h2>
       <button class="import-close" id="importClose">✕</button>
     </div>
-    <p class="import-sub">גרור לכאן קבצי <b>.msg</b> מתיקיית ה‑Outlook (אפשר כמה ביחד), או לחץ לבחירה. הדשבורד יפרק אותם לשורות מוכנות להעתקה ישירות ל‑Google Sheet.</p>
+    <p class="import-sub">גרור קבצי <b>.msg</b> מ‑Outlook — מיילי <b>"התקבלה הזמנה"</b> וגם מיילי <b>"שילוח"</b>. הדשבורד מזהה לבד את סוג המייל: הזמנות חדשות הופכות לשורות, ומיילי שילוח מעדכנים הזמנות קיימות.</p>
     <div class="dropzone" id="dropzone">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span>גרור קבצי .msg לכאן · או לחץ לבחירה</span>
@@ -143,154 +182,198 @@ footer b{color:var(--accent-soft)}
   </div>
 
   <section class="kpis" id="kpis"></section>
-
   <div class="controls" id="agentChips"></div>
   <div class="controls" style="margin-top:-6px">
     <div class="search">
-      <input id="q" type="text" placeholder="חיפוש לקוח / הזמנה…">
+      <input id="q" type="text" placeholder="חיפוש לקוח / הזמנה / רכב…">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </div>
   </div>
 
-  <div class="tablecard">
-    <table>
-      <thead>
-        <tr>
-          <th data-k="order">הזמנה <span class="arr"></span></th>
-          <th data-k="agent">נציג <span class="arr"></span></th>
-          <th data-k="customer">לקוח <span class="arr"></span></th>
-          <th data-k="received">נכנס להכנה <span class="arr">▼</span></th>
-          <th data-k="days">ימי עסקים <span class="arr"></span></th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div class="state" id="state"><div class="spinner"></div>טוען נתונים מ‑Google Sheet…</div>
-  </div>
+  <div id="months"></div>
+  <div class="state" id="state"><div class="spinner"></div>טוען נתונים מ‑Google Sheet…</div>
 
-  <footer>סך הכל <b id="cnt">0</b> הזמנות · התראה אדומה מעל 10 ימי עסקים · סוף שבוע ישראלי (שישי+שבת) לא נספר</footer>
+  <footer>
+    יעד מסירה: עד 48 שעות מהשילוח · <b style="color:var(--warn)">כתום</b> 48–72ש' · <b style="color:var(--alert)">אדום + דגל</b> מעל 72ש' · כפילות לפי מספר הזמנה מסומנת בוורוד<br>
+    סוף שבוע (שישי+שבת) לא נספר בשלב ההכנה · הזמנות מקובצות לפי חודש הכניסה להכנה
+  </footer>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>סימון מסירה</h3>
+    <p>בחר תאריך מסירה והעתק. אחר כך פתח את ה‑Google Sheet, מצא את שורת ההזמנה, והדבק את התאריך בעמודה <b style="color:var(--ok)">delivered</b>.</p>
+    <div class="field"><label>הזמנה</label><div class="mono" id="mOrder" style="flex:1;margin:0"></div></div>
+    <div class="field"><label>תאריך מסירה</label><input type="date" id="mDate"></div>
+    <div class="mono" id="mPaste"></div>
+    <div class="modal-actions">
+      <button class="m-copy" id="mCopy">העתק תאריך</button>
+      <button class="m-cancel" id="mCancel">סגור</button>
+    </div>
+  </div>
 </div>
 
 <script>
-/* ============================================================
-   הגדרה אחת בלבד — הדבק כאן את כתובת ה-CSV המפורסם מ-Google Sheets
-   File → Share → Publish to web → בחר את הלשונית → CSV
-   ============================================================ */
+/* כתובת ה-CSV המפורסם מ-Google Sheets (כבר מוגדרת) */
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJZAw4RffmzSTPeh_8ODe70JgJL0BJYaXnrEHiJmzbcHi50D7jRslAX0IhOHlfRh3t498x6Y036OoT/pub?gid=830358732&single=true&output=csv";
 
-/* עמודות הצפויות ב-Sheet (שמות הכותרות בשורה הראשונה):
-   order , agent , customer , received
-   received בפורמט: 2026-06-03 14:45  או  2026-06-03T14:45:12 */
+/* עמודות ב-Sheet (שורת כותרת ראשונה, באנגלית):
+   order , agent , customer , received , shipped , plate , model , delivered */
 
-const palette = ['#c8a04f','#5aa9e6','#3fb27f','#d98ec0','#e0a13c','#9b8be6','#e2564d'];
-let DATA = [];
-let agentColor = {};
-let state = { agent:'all', q:'', sortKey:'received', sortDir:-1 };
+const DELIVERY_TARGET_H = 48;
+const DELIVERY_WARN_H   = 72;
 
-/* ---- CSV parser (תומך בפסיקים בתוך מרכאות) ---- */
+const palette=['#c8a04f','#5aa9e6','#3fb27f','#d98ec0','#e0a13c','#9b8be6','#e2564d','#6ec6b0'];
+let DATA=[]; let agentColor={};
+let state={agent:'all',q:'',sortKey:'received',sortDir:-1,collapsed:{}};
+
 function parseCSV(text){
-  const rows=[]; let row=[],cur='',inQ=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i];
-    if(inQ){
-      if(c==='"'&&text[i+1]==='"'){cur+='"';i++;}
-      else if(c==='"'){inQ=false;}
-      else cur+=c;
-    }else{
-      if(c==='"')inQ=true;
-      else if(c===','){row.push(cur);cur='';}
-      else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';}
-      else if(c==='\r'){}
-      else cur+=c;
-    }
-  }
+  const rows=[];let row=[],cur='',inQ=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(inQ){if(c==='"'&&text[i+1]==='"'){cur+='"';i++;}else if(c==='"'){inQ=false;}else cur+=c;}
+    else{if(c==='"')inQ=true;else if(c===','){row.push(cur);cur='';}else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';}else if(c==='\r'){}else cur+=c;}}
   if(cur!==''||row.length){row.push(cur);rows.push(row);}
   return rows.filter(r=>r.some(x=>x.trim()!==''));
 }
-
 function rowsToObjects(rows){
   if(!rows.length)return[];
   const head=rows[0].map(h=>h.trim().toLowerCase());
-  const idx=name=>head.indexOf(name);
-  const iO=idx('order'),iA=idx('agent'),iC=idx('customer'),iR=idx('received');
-  return rows.slice(1).map(r=>({
-    order:(r[iO]||'').trim(),
-    agent:(r[iA]||'').trim(),
-    customer:(r[iC]||'').trim(),
-    received:(r[iR]||'').trim().replace(' ','T')
-  })).filter(o=>o.order);
+  const ix=n=>head.indexOf(n);
+  const c={order:ix('order'),agent:ix('agent'),customer:ix('customer'),received:ix('received'),
+           shipped:ix('shipped'),plate:ix('plate'),model:ix('model'),delivered:ix('delivered')};
+  return rows.slice(1).map(r=>{
+    const g=k=>c[k]>=0?(r[c[k]]||'').trim():'';
+    return {order:g('order'),agent:g('agent'),customer:g('customer'),
+      received:g('received').replace(' ','T'),shipped:g('shipped').replace(' ','T'),
+      plate:g('plate'),model:g('model'),delivered:g('delivered').replace(' ','T')};
+  }).filter(o=>o.order);
 }
 
 function businessDays(fromISO){
-  const start=new Date(fromISO);
-  if(isNaN(start)) return 0;
-  const today=new Date();
-  let d=new Date(start.getFullYear(),start.getMonth(),start.getDate());
-  const end=new Date(today.getFullYear(),today.getMonth(),today.getDate());
-  let n=0;
-  while(d<end){d.setDate(d.getDate()+1);const wd=d.getDay();if(wd!==5&&wd!==6)n++;}
-  return n;
+  const s=new Date(fromISO);if(isNaN(s))return 0;
+  const t=new Date();let d=new Date(s.getFullYear(),s.getMonth(),s.getDate());
+  const e=new Date(t.getFullYear(),t.getMonth(),t.getDate());let n=0;
+  while(d<e){d.setDate(d.getDate()+1);const w=d.getDay();if(w!==5&&w!==6)n++;}return n;
 }
-function fmtDate(iso){
-  const d=new Date(iso);
-  if(isNaN(d))return{date:iso||'—',time:''};
-  const days=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
-  const p=n=>String(n).padStart(2,'0');
-  return{date:`יום ${days[d.getDay()]}׳ ${p(d.getDate())}/${p(d.getMonth()+1)}`,time:`${p(d.getHours())}:${p(d.getMinutes())}`};
-}
-const enrich=r=>({...r,days:businessDays(r.received)});
+function hoursSince(iso){const d=new Date(iso);if(isNaN(d))return 0;return (Date.now()-d.getTime())/36e5;}
+function hoursBetween(a,b){const d1=new Date(a),d2=new Date(b);if(isNaN(d1)||isNaN(d2))return null;return (d2-d1)/36e5;}
+function fmtDate(iso){const d=new Date(iso);if(isNaN(d))return{date:iso||'—',time:''};
+  const days=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];const p=n=>String(n).padStart(2,'0');
+  return{date:`${days[d.getDay()]}׳ ${p(d.getDate())}/${p(d.getMonth()+1)}`,time:`${p(d.getHours())}:${p(d.getMinutes())}`};}
+function monthKey(iso){const d=new Date(iso);if(isNaN(d))return'9999-99';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+function monthName(key){if(key==='9999-99')return'ללא תאריך';const a=key.split('-');return `${HEB_MONTHS[+a[1]-1]} ${a[0]}`;}
 
-// סט מספרי הזמנה שמופיעים יותר מפעם אחת
-function findDuplicateOrders(){
-  const count={};
-  DATA.forEach(r=>{const o=(r.order||'').trim();if(o)count[o]=(count[o]||0)+1;});
-  return new Set(Object.keys(count).filter(o=>count[o]>1));
+function computeStatus(r){
+  if(r.delivered && !isNaN(new Date(r.delivered))){
+    const took=r.shipped?hoursBetween(r.shipped,r.delivered):null;
+    return {phase:'done',label:'נמסר ✓',cls:'st-done',sort:0,flag:false,
+      detail: took!=null?`מסירה ${Math.round(took)}ש' מהשילוח`:'נמסר'};
+  }
+  if(r.shipped && !isNaN(new Date(r.shipped))){
+    const h=hoursSince(r.shipped);
+    let cls='st-ship',label='בהכנה למסירה',flag=false;
+    if(h>DELIVERY_WARN_H){cls='st-ship-alert';label='חריגה במסירה';flag=true;}
+    else if(h>DELIVERY_TARGET_H){cls='st-ship-warn';label='מתקרב ליעד';}
+    return {phase:'ship',label,cls,sort:flag?3:2,flag,detail:`${Math.round(h)} שעות מהשילוח`};
+  }
+  const bd=businessDays(r.received);
+  return {phase:'prep',label:'בהכנה',cls:'st-prep',sort:1,flag:bd>10,detail:`${bd} ימי עסקים`};
 }
+
+function dupSet(){const c={};DATA.forEach(r=>{const o=(r.order||'').trim();if(o)c[o]=(c[o]||0)+1;});return new Set(Object.keys(c).filter(o=>c[o]>1));}
 
 function render(){
-  const dups=findDuplicateOrders();
-  const rows=DATA.map(enrich)
+  const dups=dupSet();
+  let rows=DATA.map(r=>({...r,_st:computeStatus(r)}))
     .filter(r=>state.agent==='all'||r.agent===state.agent)
-    .filter(r=>{if(!state.q)return true;const q=state.q.trim();return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q);});
-  rows.sort((a,b)=>{
-    let av=a[state.sortKey],bv=b[state.sortKey];
-    if(state.sortKey==='days'){av=a.days;bv=b.days;}
-    if(state.sortKey==='received'){av=new Date(a.received);bv=new Date(b.received);}
-    if(av<bv)return-1*state.sortDir;if(av>bv)return 1*state.sortDir;return 0;
-  });
-  const all=DATA.map(enrich);
-  const inScope=state.agent==='all'?all:all.filter(r=>r.agent===state.agent);
-  const alerts=inScope.filter(r=>r.days>10).length;
-  const avg=inScope.length?(inScope.reduce((s,r)=>s+r.days,0)/inScope.length).toFixed(1):0;
-  const dupCount=dups.size;
+    .filter(r=>{if(!state.q)return true;const q=state.q.trim();
+      return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q)||(r.plate||'').includes(q)||(r.model||'').includes(q);});
+
+  const scope=DATA.map(r=>({...r,_st:computeStatus(r)})).filter(r=>state.agent==='all'||r.agent===state.agent);
+  const prep=scope.filter(r=>r._st.phase==='prep').length;
+  const ship=scope.filter(r=>r._st.phase==='ship').length;
+  const done=scope.filter(r=>r._st.phase==='done').length;
+  const flags=scope.filter(r=>r._st.flag).length;
   document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><div class="lbl">סה״כ הזמנות בהכנה</div><div class="val">${inScope.length}</div></div>
-    <div class="kpi"><div class="lbl">נציגים פעילים</div><div class="val">${new Set(inScope.map(r=>r.agent)).size}</div></div>
-    <div class="kpi"><div class="lbl">ממוצע ימי עסקים</div><div class="val">${avg}</div></div>
-    <div class="kpi ${alerts?'alert':''}"><div class="lbl">בהתראה (10+ ימים)</div><div class="val">${alerts}</div></div>
-    ${dupCount?`<div class="kpi dup"><div class="lbl">כפילויות לבדיקה</div><div class="val">${dupCount}</div></div>`:''}`;
-  const tb=document.getElementById('rows');
-  tb.innerHTML=rows.map(r=>{
-    const f=fmtDate(r.received);let badge,cls;
-    if(r.days>10){badge='b-alert';cls='row-alert';}
-    else if(r.days>=7){badge='b-warn';cls='';}
-    else{badge='b-ok';cls='';}
-    const isDup=dups.has((r.order||'').trim());
-    if(isDup)cls='row-dup';
-    return `<tr class="${cls}">
-      <td><span class="ordnum">${r.order}</span>${isDup?'<span class="dup-tag">כפילות</span>':''}</td>
-      <td><span class="agent-tag"><span class="dot" style="background:${agentColor[r.agent]||'#888'}"></span>${r.agent}</span></td>
-      <td class="cust">${r.customer}</td>
-      <td class="when"><b>${f.date}</b> <span class="time">${f.time?'· '+f.time:''}</span></td>
-      <td><span class="days"><span class="badge ${badge}">${r.days} ימים</span></span></td>
-    </tr>`;
+    <div class="kpi"><div class="lbl">בהכנה</div><div class="val">${prep}</div></div>
+    <div class="kpi ship"><div class="lbl">בדרך / להכנת מסירה</div><div class="val">${ship}</div></div>
+    <div class="kpi ok"><div class="lbl">נמסרו</div><div class="val">${done}</div></div>
+    <div class="kpi ${flags?'alert':''}"><div class="lbl">דגלים לטיפול</div><div class="val">${flags}</div></div>`;
+
+  const groups={};
+  rows.forEach(r=>{const k=monthKey(r.received);(groups[k]=groups[k]||[]).push(r);});
+  const keys=Object.keys(groups).sort().reverse();
+
+  const sortRows=arr=>arr.sort((a,b)=>{
+    if(state.sortKey==='status'){if(a._st.sort!==b._st.sort)return (a._st.sort-b._st.sort)*state.sortDir;}
+    let av=a[state.sortKey],bv=b[state.sortKey];
+    if(state.sortKey==='received'||state.sortKey==='shipped'){av=new Date(av||0);bv=new Date(bv||0);}
+    if(av<bv)return -1*state.sortDir;if(av>bv)return 1*state.sortDir;return 0;});
+
+  const cont=document.getElementById('months');
+  if(!rows.length){cont.innerHTML='';const s=document.getElementById('state');s.style.display='block';s.className='state';s.textContent='אין הזמנות תואמות';return;}
+  document.getElementById('state').style.display='none';
+
+  cont.innerHTML=keys.map(k=>{
+    const arr=sortRows(groups[k]);
+    const c={prep:0,ship:0,done:0,flag:0};
+    arr.forEach(r=>{c[r._st.phase]++;if(r._st.flag)c.flag++;});
+    const collapsed=state.collapsed[k]?'collapsed':'';
+    const mini=`<span class="s-prep">${c.prep} בהכנה</span><span class="s-ship">${c.ship} בדרך</span><span class="s-done">${c.done} נמסרו</span>${c.flag?`<span class="s-flag">${c.flag} דגל</span>`:''}`;
+    const body=arr.map(r=>{
+      const isDup=dups.has((r.order||'').trim());
+      const rec=fmtDate(r.received);
+      let rowcls='';if(r._st.phase==='done')rowcls='row-done';else if(r._st.flag)rowcls='row-flag';
+      if(isDup)rowcls+=' row-dup';
+      const shipCell=r.shipped&&!isNaN(new Date(r.shipped))
+        ?`<b>${fmtDate(r.shipped).date}</b><div class="sub2">${fmtDate(r.shipped).time}${r.plate?' · <span class="plate">'+r.plate+'</span>':''}</div>`
+        :'<span style="color:var(--ink-dim)">—</span>';
+      const action=r._st.phase==='done'
+        ? `<span class="status st-done">${fmtDate(r.delivered).date}</span>`
+        : `<button class="btn-deliver" data-order="${r.order}">סמן כנמסר</button>`;
+      return `<tr class="${rowcls}">
+        <td><span class="ordnum">${r.order}</span>${isDup?'<span class="dup-tag">כפילות</span>':''}</td>
+        <td><span class="agent-tag"><span class="dot" style="background:${agentColor[r.agent]||'#888'}"></span>${r.agent}</span></td>
+        <td class="cust">${r.customer}${r.model?'<div class="sub2">'+r.model+'</div>':''}</td>
+        <td class="when hide-sm"><b>${rec.date}</b><div class="sub2">${rec.time}</div></td>
+        <td class="when">${shipCell}</td>
+        <td><span class="status ${r._st.cls}">${r._st.label}</span><div class="sub2">${r._st.detail}</div></td>
+        <td>${action}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="month-block ${collapsed}" data-mk="${k}">
+      <div class="month-bar">
+        <span class="caret">▼</span>
+        <span class="mname">${monthName(k)}</span>
+        <span class="mcount">${arr.length} הזמנות</span>
+        <span class="mmini">${mini}</span>
+      </div>
+      <div class="tablecard">
+        <table>
+          <thead><tr>
+            <th data-k="order">הזמנה</th>
+            <th data-k="agent">נציג</th>
+            <th data-k="customer">לקוח / דגם</th>
+            <th data-k="received" class="hide-sm">נכנס להכנה</th>
+            <th data-k="shipped">שולח / בדרך</th>
+            <th data-k="status">סטטוס</th>
+            <th>מסירה</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </div>`;
   }).join('');
-  document.getElementById('cnt').textContent=rows.length;
-  document.querySelectorAll('thead th').forEach(th=>{
-    const k=th.dataset.k;
-    th.querySelector('.arr').textContent=k===state.sortKey?(state.sortDir===1?'▲':'▼'):'';
-  });
+
+  cont.querySelectorAll('.month-bar').forEach(bar=>{bar.onclick=()=>{
+    const blk=bar.closest('.month-block');const k=blk.dataset.mk;
+    state.collapsed[k]=!state.collapsed[k];blk.classList.toggle('collapsed');};});
+  cont.querySelectorAll('thead th[data-k]').forEach(th=>{th.onclick=()=>{
+    const k=th.dataset.k;if(state.sortKey===k)state.sortDir*=-1;else{state.sortKey=k;state.sortDir=(k==='received'||k==='shipped')?-1:1;}render();};});
+  cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
 }
+
 function buildChips(){
   const agents=[...new Set(DATA.map(d=>d.agent))];
   agents.forEach((a,i)=>{if(!agentColor[a])agentColor[a]=palette[i%palette.length];});
@@ -299,138 +382,124 @@ function buildChips(){
   c.innerHTML=mk('כל הנציגים','all')+agents.map(a=>mk(a,a)).join('');
   c.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{state.agent=ch.dataset.a;buildChips();render();});
 }
-function setState(html,isErr){
-  const s=document.getElementById('state');
-  if(html===null){s.style.display='none';return;}
-  s.style.display='block';s.className='state'+(isErr?' err':'');s.innerHTML=html;
-}
-async function load(){
-  const btn=document.getElementById('refreshBtn');btn.classList.add('spin');
-  if(CSV_URL.includes('PASTE_YOUR')){
-    setState('⚠️ עדיין לא הוגדרה כתובת ה‑CSV.<br>פתח את הקובץ ועדכן את המשתנה <b>CSV_URL</b> בראש הסקריפט.',true);
-    btn.classList.remove('spin');return;
-  }
-  try{
-    const res=await fetch(CSV_URL+(CSV_URL.includes('?')?'&':'?')+'t='+Date.now());
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const txt=await res.text();
-    DATA=rowsToObjects(parseCSV(txt));
-    if(!DATA.length){setState('הגיליון ריק או שהכותרות לא תואמות (order, agent, customer, received).',true);}
-    else{setState(null);buildChips();render();}
-    const n=new Date();const p=x=>String(x).padStart(2,'0');
-    document.getElementById('upd').textContent=`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;
-  }catch(e){
-    setState('שגיאה בטעינת הנתונים: '+e.message+'<br>ודא שהגיליון פורסם כ‑CSV ושהכתובת נכונה.',true);
-  }
-  btn.classList.remove('spin');
-}
-document.querySelectorAll('thead th').forEach(th=>{th.onclick=()=>{const k=th.dataset.k;if(state.sortKey===k)state.sortDir*=-1;else{state.sortKey=k;state.sortDir=k==='received'?-1:1;}render();};});
-document.getElementById('q').oninput=e=>{state.q=e.target.value;render();};
-document.getElementById('refreshBtn').onclick=load;
+function setState(html,isErr){const s=document.getElementById('state');
+  if(html===null){s.style.display='none';return;}s.style.display='block';s.className='state'+(isErr?' err':'');s.innerHTML=html;}
 
-/* ============================================================
-   ייבוא ממיילים — פרסר .msg (CFB/OLE2) בדפדפן
-   ============================================================ */
+let deliverOrder=null;
+function openDeliver(order){
+  deliverOrder=order;
+  document.getElementById('mOrder').textContent=order;
+  const t=new Date();const iso=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  document.getElementById('mDate').value=iso;updatePaste();
+  document.getElementById('modalBg').classList.add('open');
+}
+function updatePaste(){document.getElementById('mPaste').textContent=document.getElementById('mDate').value;}
+document.getElementById('mDate').oninput=updatePaste;
+document.getElementById('mCancel').onclick=()=>document.getElementById('modalBg').classList.remove('open');
+document.getElementById('modalBg').onclick=e=>{if(e.target.id==='modalBg')document.getElementById('modalBg').classList.remove('open');};
+document.getElementById('mCopy').onclick=()=>{
+  const v=document.getElementById('mDate').value;try{navigator.clipboard.writeText(v);}catch(e){}
+  const b=document.getElementById('mCopy');b.textContent='✓ הועתק — הדבק בעמודה delivered';
+  setTimeout(()=>{b.textContent='העתק תאריך';},2500);
+};
+
+/* פרסר .msg */
 function parseMsg(arrayBuffer){
   const d=new DataView(arrayBuffer);const u8=new Uint8Array(arrayBuffer);
   const sig=[0xD0,0xCF,0x11,0xE0,0xA1,0xB1,0x1A,0xE1];
-  for(let i=0;i<8;i++) if(u8[i]!==sig[i]) throw new Error('not a .msg file');
+  for(let i=0;i<8;i++)if(u8[i]!==sig[i])throw new Error('not a .msg file');
   const sec=1<<d.getUint16(30,true);const mini=1<<d.getUint16(32,true);
   const numFat=d.getUint32(44,true);const dirStart=d.getUint32(48,true);
-  const miniCutoff=d.getUint32(56,true);const minifatStart=d.getUint32(60,true);
-  const difatStart=d.getUint32(68,true);
+  const miniCutoff=d.getUint32(56,true);const minifatStart=d.getUint32(60,true);const difatStart=d.getUint32(68,true);
   const so=s=>(s+1)*sec;
   let difat=[];for(let i=0;i<109;i++)difat.push(d.getUint32(76+i*4,true));
   let s=difatStart;
-  while(s!==0xFFFFFFFE&&s!==0xFFFFFFFF&&difat.length<numFat+109){
-    const off=so(s);for(let i=0;i<sec/4-1;i++)difat.push(d.getUint32(off+i*4,true));s=d.getUint32(off+sec-4,true);
-  }
-  let fat=[];
-  for(const fs of difat){if(fs===0xFFFFFFFE||fs===0xFFFFFFFF)continue;const off=so(fs);for(let i=0;i<sec/4;i++)fat.push(d.getUint32(off+i*4,true));}
+  while(s!==0xFFFFFFFE&&s!==0xFFFFFFFF&&difat.length<numFat+109){const off=so(s);for(let i=0;i<sec/4-1;i++)difat.push(d.getUint32(off+i*4,true));s=d.getUint32(off+sec-4,true);}
+  let fat=[];for(const fs of difat){if(fs===0xFFFFFFFE||fs===0xFFFFFFFF)continue;const off=so(fs);for(let i=0;i<sec/4;i++)fat.push(d.getUint32(off+i*4,true));}
   function chain(start){const out=[];let s=start;while(s!==0xFFFFFFFE&&s!==0xFFFFFFFF&&s<fat.length){out.push(s);s=fat[s];}return out;}
   function readChain(start){const secs=chain(start);const buf=new Uint8Array(secs.length*sec);secs.forEach((sc,i)=>buf.set(u8.subarray(so(sc),so(sc)+sec),i*sec));return buf;}
   const dirData=readChain(dirStart);const entries=[];
-  for(let i=0;i+128<=dirData.length;i+=128){
-    const nlen=dirData[i+64]|(dirData[i+65]<<8);if(nlen===0)continue;
+  for(let i=0;i+128<=dirData.length;i+=128){const nlen=dirData[i+64]|(dirData[i+65]<<8);if(nlen===0)continue;
     let name='';for(let j=0;j<nlen-2;j+=2){const c=dirData[i+j]|(dirData[i+j+1]<<8);if(c)name+=String.fromCharCode(c);}
-    const type=dirData[i+66];
-    const start=dirData[i+116]|(dirData[i+117]<<8)|(dirData[i+118]<<16)|(dirData[i+119]<<24);
-    const size=(dirData[i+120]|(dirData[i+121]<<8)|(dirData[i+122]<<16)|(dirData[i+123]<<24))>>>0;
-    entries.push({name,type,start,size});
-  }
-  const root=entries.find(e=>e.type===5);
-  const ministream=readChain(root.start).subarray(0,root.size);
-  const mfd=readChain(minifatStart);const minifat=[];
-  for(let i=0;i<mfd.length/4;i++)minifat.push(mfd[i*4]|(mfd[i*4+1]<<8)|(mfd[i*4+2]<<16)|(mfd[i*4+3]<<24));
-  function readMini(start,size){const out=new Uint8Array(size);let s=start,pos=0;
-    while(s!==0xFFFFFFFE&&s!==0xFFFFFFFF&&s<minifat.length&&pos<size){const chunk=ministream.subarray(s*mini,s*mini+mini);out.set(chunk.subarray(0,Math.min(mini,size-pos)),pos);pos+=mini;s=minifat[s];}return out;}
+    const type=dirData[i+66];const start=dirData[i+116]|(dirData[i+117]<<8)|(dirData[i+118]<<16)|(dirData[i+119]<<24);
+    const size=(dirData[i+120]|(dirData[i+121]<<8)|(dirData[i+122]<<16)|(dirData[i+123]<<24))>>>0;entries.push({name,type,start,size});}
+  const root=entries.find(e=>e.type===5);const ministream=readChain(root.start).subarray(0,root.size);
+  const mfd=readChain(minifatStart);const minifat=[];for(let i=0;i<mfd.length/4;i++)minifat.push(mfd[i*4]|(mfd[i*4+1]<<8)|(mfd[i*4+2]<<16)|(mfd[i*4+3]<<24));
+  function readMini(start,size){const out=new Uint8Array(size);let s=start,pos=0;while(s!==0xFFFFFFFE&&s!==0xFFFFFFFF&&s<minifat.length&&pos<size){const ch=ministream.subarray(s*mini,s*mini+mini);out.set(ch.subarray(0,Math.min(mini,size-pos)),pos);pos+=mini;s=minifat[s];}return out;}
   function getStream(name){const e=entries.find(en=>en.name===name&&en.type===2);if(!e)return null;return e.size<miniCutoff?readMini(e.start,e.size):readChain(e.start).subarray(0,e.size);}
   function decU16(b){let o='';for(let i=0;i+1<b.length;i+=2){const c=b[i]|(b[i+1]<<8);if(c)o+=String.fromCharCode(c);}return o;}
   function prop(tag){let b=getStream('__substg1.0_'+tag+'001F');if(b)return decU16(b);b=getStream('__substg1.0_'+tag+'001E');if(b){try{return new TextDecoder('windows-1255').decode(b);}catch(e){return null;}}return null;}
   return {subject:prop('0037')||'',body:prop('1000')||'',header:prop('007D')||''};
 }
-function extractFields(parsed){
-  const body=parsed.body||'';
-  function field(label){for(const line of body.replace(/\r/g,'\n').split('\n')){const t=line.trim();if(t.indexOf(label)===0){const idx=t.indexOf(':');return idx>=0?t.slice(idx+1).trim():t.replace(label,'').trim();}}return null;}
-  let order=field('התקבלה הזמנה מספר');
-  if(order){const m=order.match(/(\d{5,})/);if(m)order=m[1];}
-  if(!order){const m=(parsed.subject||'').match(/(\d{5,})/);if(m)order=m[1];}
-  const agent=field('מנציג');const customer=field('שם לקוח');
-  let received=null;const m=(parsed.header||'').match(/\nDate:\s*(.+)/);
-  if(m){const dt=new Date(m[1].trim());if(!isNaN(dt)){const p=n=>String(n).padStart(2,'0');received=`${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`;}}
-  return {order,agent,customer,received};
+function isoFromHeader(header){const m=(header||'').match(/\nDate:\s*(.+)/);if(!m)return null;const dt=new Date(m[1].trim());if(isNaN(dt))return null;const p=n=>String(n).padStart(2,'0');return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`;}
+function field(body,label){for(const line of (body||'').replace(/\r/g,'\n').split('\n')){const t=line.trim();if(t.indexOf(label)===0){const idx=t.indexOf(':');return idx>=0?t.slice(idx+1).trim():t.replace(label,'').trim();}}return null;}
+
+function classifyMsg(parsed){
+  const subj=parsed.subject||'';const body=parsed.body||'';
+  if(subj.includes('שילוח')||body.includes('יצא זה עתה')||body.includes('בדרכו אליכם')){
+    let order=null;let m=subj.match(/הזמנה\D*(\d{5,})/)||body.match(/הזמנה מס['׳]?\s*(\d{5,})/);if(m)order=m[1];
+    const plate=(body.match(/רישוי\s*([\d\-]+)/)||[])[1]||'';
+    const model=(body.match(/דגם\s*(.+?)\s*צבע/)||[])[1]||'';
+    return {type:'ship',order,shipped:isoFromHeader(parsed.header),plate,model};
+  }
+  let order=field(body,'התקבלה הזמנה מספר');if(order){const m=order.match(/(\d{5,})/);if(m)order=m[1];}
+  if(!order){const m=subj.match(/(\d{5,})/);if(m)order=m[1];}
+  return {type:'prep',order,agent:field(body,'מנציג'),customer:field(body,'שם לקוח'),received:isoFromHeader(parsed.header)};
 }
-function csvCell(v){v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 
 async function handleFiles(files){
   const result=document.getElementById('importResult');
   result.innerHTML='<div class="state" style="padding:20px"><div class="spinner"></div>מפרק קבצים…</div>';
   const existing=new Set(DATA.map(r=>(r.order||'').trim()));
-  const seen=new Set();const parsed=[];let errors=0;
+  const seen=new Set();const preps=[];const ships=[];let errors=0;
   for(const f of files){
-    if(!f.name.toLowerCase().endsWith('.msg')){continue;}
-    try{
-      const ab=await f.arrayBuffer();
-      const fields=extractFields(parseMsg(ab));
-      if(!fields.order){errors++;continue;}
-      let status='new';
-      if(existing.has(fields.order)) status='exists';      // כבר ב-Sheet
-      else if(seen.has(fields.order)) status='dupfile';     // כפול בין הקבצים שנגררו
-      seen.add(fields.order);
-      parsed.push({...fields,status});
+    if(!f.name.toLowerCase().endsWith('.msg'))continue;
+    try{const info=classifyMsg(parseMsg(await f.arrayBuffer()));
+      if(!info.order){errors++;continue;}
+      if(info.type==='ship')ships.push(info);
+      else{let status='new';if(existing.has(info.order))status='exists';else if(seen.has(info.order))status='dupfile';seen.add(info.order);preps.push({...info,status});}
     }catch(e){errors++;}
   }
-  if(!parsed.length){result.innerHTML='<div class="imp-summary"><span class="imp-pill err">לא זוהו הזמנות בקבצים שנבחרו'+(errors?` (${errors} שגיאות)`:'')+'</span></div>';return;}
-  const fresh=parsed.filter(p=>p.status==='new');
-  const exists=parsed.filter(p=>p.status==='exists');
-  const dupfile=parsed.filter(p=>p.status==='dupfile');
-  // טקסט להדבקה: רק חדשות, מופרד טאבים — מתאים להדבקה ישירה ב-Sheets
-  const pasteText=fresh.map(p=>[p.order,p.agent,p.customer,p.received].join('\t')).join('\n');
-  let html='<div class="imp-summary">';
-  html+=`<span class="imp-pill ok">${fresh.length} הזמנות חדשות</span>`;
-  if(exists.length)html+=`<span class="imp-pill dup">${exists.length} כבר קיימות ב-Sheet</span>`;
-  if(dupfile.length)html+=`<span class="imp-pill dup">${dupfile.length} כפולות בין הקבצים</span>`;
-  if(errors)html+=`<span class="imp-pill err">${errors} לא נקראו</span>`;
-  html+='</div>';
-  if(fresh.length){
-    html+='<div class="imp-actions"><button class="btn-copy" id="copyBtn">העתק את ההזמנות החדשות</button></div>';
-    html+='<textarea class="paste-box" id="pasteBox" rows="'+Math.min(fresh.length+1,8)+'" readonly>'+pasteText.replace(/</g,'&lt;')+'</textarea>';
-    html+='<div class="imp-note">העתק → פתח את ה-Google Sheet → לחץ על התא הריק הראשון בעמודה <b>order</b> מתחת לשורה האחרונה → הדבק (Ctrl+V). כל ההזמנות ייכנסו בבת אחת לעמודות הנכונות. הדשבורד יתעדכן ברענון הבא.</div>';
+  let html='';
+  const fresh=preps.filter(p=>p.status==='new');
+  const exists=preps.filter(p=>p.status==='exists');
+  const prepPaste=fresh.map(p=>[p.order,p.agent,p.customer,p.received,'','','',''].join('\t')).join('\n');
+  if(preps.length){
+    html+='<div class="imp-block"><h3>📥 מיילי הזמנה</h3><div class="imp-summary">';
+    html+=`<span class="imp-pill ok">${fresh.length} חדשות</span>`;
+    if(exists.length)html+=`<span class="imp-pill dup">${exists.length} כבר קיימות</span>`;
+    html+='</div>';
+    if(fresh.length){
+      html+='<div class="imp-actions"><button class="btn-copy" id="copyPrep">העתק הזמנות חדשות</button></div>';
+      html+='<textarea class="paste-box" rows="'+Math.min(fresh.length+1,7)+'" readonly id="boxPrep">'+prepPaste.replace(/</g,'&lt;')+'</textarea>';
+      html+='<div class="imp-note">הדבק בתא הריק הראשון בעמודה <b>order</b> מתחת לשורה האחרונה ב‑Sheet. (עמודות shipped/plate/model/delivered יישארו ריקות וימולאו בהמשך.)</div>';
+    }
+    if(exists.length)html+='<div class="imp-note">כבר קיימות (לא הועתקו): '+exists.map(p=>p.order).join(', ')+'</div>';
+    html+='</div>';
   }
-  if(exists.length){
-    html+='<div class="imp-note" style="margin-top:14px"><b>כבר קיימות ב-Sheet (לא נכללו בהעתקה):</b> '+exists.map(p=>p.order).join(', ')+'</div>';
+  const shipPaste=ships.map(s=>[s.shipped||'',s.plate||'',s.model||''].join('\t')).join('\n');
+  if(ships.length){
+    html+='<div class="imp-block"><h3 style="color:var(--ship)">🚚 מיילי שילוח</h3>';
+    html+='<div class="imp-summary"><span class="imp-pill ship">'+ships.length+' שולחו</span></div>';
+    ships.forEach(s=>{const known=existing.has(s.order);
+      html+=`<div class="ship-line">הזמנה <b>${s.order}</b> ${known?'':'<span style="color:var(--warn)">(לא נמצאה ב-Sheet — ודא שייבאת קודם את מייל ההזמנה)</span>'}<br>
+        תאריך שילוח: <b>${s.shipped||'—'}</b>${s.plate?' · רישוי: '+s.plate:''}${s.model?' · '+s.model:''}</div>`;});
+    html+='<div class="imp-note" style="margin-top:12px"><b>לעדכון ב‑Sheet:</b> מצא את שורת ההזמנה והדבק את הערכים בעמודות <b>shipped</b> / <b>plate</b> / <b>model</b>. הבלוק למטה מסודר בסדר הופעת ההזמנות למעלה.</div>';
+    html+='<div class="imp-actions" style="margin-top:10px"><button class="btn-copy" id="copyShip">העתק נתוני שילוח</button></div>';
+    html+='<textarea class="paste-box" rows="'+Math.min(ships.length+1,5)+'" readonly id="boxShip">'+shipPaste.replace(/</g,'&lt;')+'</textarea>';
+    html+='</div>';
   }
+  if(!preps.length&&!ships.length){html='<div class="imp-summary"><span class="imp-pill err">לא זוהו הזמנות'+(errors?` (${errors} שגיאות)`:'')+'</span></div>';}
+  else if(errors)html+=`<div class="imp-note"><span style="color:var(--alert)">${errors} קבצים לא נקראו</span></div>`;
   result.innerHTML=html;
-  const cb=document.getElementById('copyBtn');
-  if(cb)cb.onclick=()=>{
-    const ta=document.getElementById('pasteBox');ta.select();
-    try{navigator.clipboard.writeText(pasteText);}catch(e){document.execCommand('copy');}
-    cb.textContent='✓ הועתק! עכשיו הדבק ב-Sheet';cb.classList.add('done');
-    setTimeout(()=>{cb.textContent='העתק את ההזמנות החדשות';cb.classList.remove('done');},3000);
-  };
+
+  function wire(btnId,boxId,text){const b=document.getElementById(btnId);if(!b)return;b.onclick=()=>{
+    const ta=document.getElementById(boxId);ta.select();try{navigator.clipboard.writeText(text);}catch(e){document.execCommand('copy');}
+    const o=b.textContent;b.textContent='✓ הועתק!';b.classList.add('done');setTimeout(()=>{b.textContent=o;b.classList.remove('done');},2500);};}
+  wire('copyPrep','boxPrep',prepPaste);
+  wire('copyShip','boxShip',shipPaste);
 }
 
-// פתיחה/סגירה של הפאנל
 const panel=document.getElementById('importPanel');
 document.getElementById('importBtn').onclick=()=>panel.classList.toggle('open');
 document.getElementById('importClose').onclick=()=>panel.classList.remove('open');
@@ -439,11 +508,25 @@ dz.onclick=()=>fi.click();
 fi.onchange=()=>handleFiles([...fi.files]);
 ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
 ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
-dz.addEventListener('drop',e=>{handleFiles([...e.dataTransfer.files]);});
+dz.addEventListener('drop',e=>handleFiles([...e.dataTransfer.files]));
 
+async function load(){
+  const btn=document.getElementById('refreshBtn');btn.classList.add('spin');
+  try{
+    const res=await fetch(CSV_URL+(CSV_URL.includes('?')?'&':'?')+'t='+Date.now());
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    DATA=rowsToObjects(parseCSV(await res.text()));
+    if(!DATA.length){setState('הגיליון ריק או שהכותרות לא תואמות.',true);}
+    else{buildChips();render();}
+    const n=new Date();const p=x=>String(x).padStart(2,'0');
+    document.getElementById('upd').textContent=`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;
+  }catch(e){setState('שגיאה בטעינה: '+e.message,true);}
+  btn.classList.remove('spin');
+}
+document.getElementById('q').oninput=e=>{state.q=e.target.value;render();};
+document.getElementById('refreshBtn').onclick=load;
 load();
-setInterval(load,5*60*1000); // רענון אוטומטי כל 5 דקות
-
+setInterval(load,5*60*1000);
 </script>
 </body>
 </html>

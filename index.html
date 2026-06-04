@@ -7,15 +7,15 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap');
 :root{
-  --bg:#0d1117;--panel:#161b22;--panel-2:#1c2230;--line:#262d3a;
-  --ink:#e9eef5;--ink-dim:#8b97a8;--accent:#c8a04f;--accent-soft:#d8b878;
-  --ok:#3fb27f;--warn:#e0a13c;--alert:#e2564d;--ship:#5aa9e6;--dup:#d98ec0;
-  --shadow:0 18px 50px -20px rgba(0,0,0,.7);
+  --bg:#eef1f5;--panel:#ffffff;--panel-2:#f6f8fb;--line:#dde3ec;
+  --ink:#1c2430;--ink-dim:#6b7686;--accent:#b8902f;--accent-soft:#9c7a26;
+  --ok:#1f9e62;--warn:#c97e16;--alert:#d23f36;--ship:#2f7fc7;--dup:#b85a9c;
+  --shadow:0 14px 40px -22px rgba(40,55,80,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Heebo',sans-serif;background:
-  radial-gradient(1100px 600px at 90% -10%, rgba(200,160,79,.10), transparent 60%),
-  radial-gradient(900px 500px at -10% 110%, rgba(63,178,127,.06), transparent 60%),var(--bg);
+  radial-gradient(1100px 600px at 90% -10%, rgba(184,144,47,.07), transparent 60%),
+  radial-gradient(900px 500px at -10% 110%, rgba(47,127,199,.05), transparent 60%),var(--bg);
   color:var(--ink);min-height:100vh;padding:28px clamp(14px,4vw,48px);line-height:1.5}
 .wrap{max-width:1280px;margin:0 auto}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px;padding-bottom:22px;border-bottom:1px solid var(--line);margin-bottom:26px}
@@ -54,7 +54,7 @@ h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:clamp(26px,4vw
 .btn-copy{background:var(--accent);border:none;color:#1a1205;font-weight:700;padding:10px 20px;border-radius:999px;cursor:pointer;font-family:inherit;font-size:13.5px;transition:.15s}
 .btn-copy:hover{background:var(--accent-soft)}
 .btn-copy.done{background:var(--ok);color:#062014}
-.paste-box{width:100%;background:#0a0e14;border:1px solid var(--line);border-radius:12px;color:var(--ink);font-family:'Courier New',monospace;font-size:13px;padding:14px;direction:ltr;text-align:left;white-space:pre;overflow:auto;max-height:200px}
+.paste-box{width:100%;background:#f0f3f8;border:1px solid var(--line);border-radius:12px;color:var(--ink);font-family:'Courier New',monospace;font-size:13px;padding:14px;direction:ltr;text-align:left;white-space:pre;overflow:auto;max-height:200px}
 .imp-note{font-size:12.5px;color:var(--ink-dim);margin-top:10px;line-height:1.6}
 .imp-note b{color:var(--accent-soft)}
 .ship-line{background:var(--panel-2);border:1px solid var(--line);border-inline-start:3px solid var(--ship);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13.5px;line-height:1.7}
@@ -136,12 +136,32 @@ footer b{color:var(--accent-soft)}
 .modal p{color:var(--ink-dim);font-size:13.5px;line-height:1.7;margin-bottom:16px}
 .modal .field{display:flex;gap:8px;margin-bottom:14px;align-items:center}
 .modal label{font-size:13px;color:var(--ink-dim);min-width:90px}
-.modal input{flex:1;background:#0a0e14;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 12px;font-family:inherit;font-size:13.5px;direction:ltr;text-align:left}
-.modal .mono{background:#0a0e14;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:'Courier New',monospace;font-size:13px;direction:ltr;text-align:left;color:var(--ink);margin-bottom:6px}
+.modal input{flex:1;background:#f0f3f8;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 12px;font-family:inherit;font-size:13.5px;direction:ltr;text-align:left}
+.modal .mono{background:#f0f3f8;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:'Courier New',monospace;font-size:13px;direction:ltr;text-align:left;color:var(--ink);margin-bottom:6px}
 .modal-actions{display:flex;gap:10px;margin-top:6px}
 .modal-actions button{flex:1;padding:10px;border-radius:999px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;border:none}
 .m-copy{background:var(--ok);color:#062014}
 .m-cancel{background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim)}
+
+/* ===== מסך נעילה ===== */
+#gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(900px 500px at 50% -10%, rgba(200,160,79,.10), transparent 60%),var(--bg)}
+#gate.hidden{display:none}
+.gate-card{background:linear-gradient(160deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:20px;padding:34px 30px;max-width:360px;width:100%;text-align:center;box-shadow:var(--shadow)}
+.gate-card .kicker{font-size:11px;letter-spacing:.32em;color:var(--accent);font-weight:700;display:block;margin-bottom:8px}
+.gate-card h2{font-family:'Frank Ruhl Libre',serif;font-size:24px;font-weight:900;margin-bottom:6px}
+.gate-card p{color:var(--ink-dim);font-size:13px;margin-bottom:22px}
+.gate-card input.code{width:100%;background:#f0f3f8;border:1px solid var(--line);border-radius:12px;color:var(--ink);
+  padding:14px;font-size:24px;text-align:center;letter-spacing:.5em;font-family:'Courier New',monospace;outline:none;transition:.18s}
+.gate-card input.code:focus{border-color:var(--accent)}
+.gate-card input.code.err{border-color:var(--alert);animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.gate-card .errmsg{color:var(--alert);font-size:12.5px;height:16px;margin-top:8px}
+.gate-card button{width:100%;background:var(--accent);border:none;color:#1a1205;font-weight:800;padding:13px;border-radius:12px;
+  font-family:inherit;font-size:15px;cursor:pointer;margin-top:16px;transition:.15s}
+.gate-card button:hover{background:var(--accent-soft)}
+.gate-card .remember{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;color:var(--ink-dim);font-size:12.5px;cursor:pointer;user-select:none}
+.gate-card .remember input{width:auto;padding:0;margin:0}
 
 @media(max-width:760px){
   .hide-sm{display:none}
@@ -151,6 +171,17 @@ footer b{color:var(--accent-soft)}
 </style>
 </head>
 <body>
+<div id="gate">
+  <div class="gate-card">
+    <span class="kicker">LEXUS · הרצליה</span>
+    <h2>דשבורד מכירות</h2>
+    <p>הזן קוד גישה כדי להמשיך</p>
+    <input class="code" id="gateInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+    <div class="errmsg" id="gateErr"></div>
+    <button id="gateBtn">כניסה</button>
+    <label class="remember"><input type="checkbox" id="gateRemember" checked> זכור אותי במכשיר הזה</label>
+  </div>
+</div>
 <div class="wrap">
   <header>
     <div class="brand">
@@ -214,6 +245,38 @@ footer b{color:var(--accent-soft)}
 </div>
 
 <script>
+/* ===== מסך נעילה ===== */
+const ACCESS_CODE = "5322";          // קוד הגישה — אפשר לשנות כאן
+const REMEMBER_DAYS = 30;            // כמה ימים לזכור מכשיר
+function gatePassed(){
+  try{
+    const v=document.cookie.split('; ').find(c=>c.startsWith('lexus_ok='));
+    return !!v;
+  }catch(e){return false;}
+}
+function setGateCookie(){
+  const d=new Date();d.setTime(d.getTime()+REMEMBER_DAYS*24*60*60*1000);
+  document.cookie=`lexus_ok=1; expires=${d.toUTCString()}; path=/; SameSite=Strict`;
+}
+function unlock(){document.getElementById('gate').classList.add('hidden');startApp();}
+(function initGate(){
+  if(gatePassed()){document.getElementById('gate').classList.add('hidden');/* startApp נקרא בסוף */ window.__unlocked=true;return;}
+  const inp=document.getElementById('gateInput');const btn=document.getElementById('gateBtn');const err=document.getElementById('gateErr');
+  function tryCode(){
+    if(inp.value===ACCESS_CODE){
+      if(document.getElementById('gateRemember').checked)setGateCookie();
+      unlock();
+    }else{
+      inp.classList.add('err');err.textContent='קוד שגוי';inp.value='';
+      setTimeout(()=>inp.classList.remove('err'),350);
+    }
+  }
+  btn.onclick=tryCode;
+  inp.onkeydown=e=>{if(e.key==='Enter')tryCode();};
+  inp.oninput=()=>{err.textContent='';};
+  setTimeout(()=>inp.focus(),100);
+})();
+
 /* כתובת ה-CSV המפורסם מ-Google Sheets (כבר מוגדרת) */
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJZAw4RffmzSTPeh_8ODe70JgJL0BJYaXnrEHiJmzbcHi50D7jRslAX0IhOHlfRh3t498x6Y036OoT/pub?gid=830358732&single=true&output=csv";
 
@@ -525,8 +588,16 @@ async function load(){
 }
 document.getElementById('q').oninput=e=>{state.q=e.target.value;render();};
 document.getElementById('refreshBtn').onclick=load;
-load();
-setInterval(load,5*60*1000);
+
+let __appStarted=false;
+function startApp(){
+  if(__appStarted)return;__appStarted=true;
+  load();
+  setInterval(load,5*60*1000);
+}
+// אם המכשיר כבר זכור — הפעל מיד; אחרת ימתין ל-unlock()
+if(window.__unlocked)startApp();
+
 </script>
 </body>
 </html>

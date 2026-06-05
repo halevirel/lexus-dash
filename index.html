@@ -9,7 +9,7 @@
 :root{
   --bg:#eef1f5;--panel:#ffffff;--panel-2:#f6f8fb;--line:#dde3ec;
   --ink:#1c2430;--ink-dim:#6b7686;--accent:#b8902f;--accent-soft:#9c7a26;
-  --ok:#1f9e62;--warn:#c97e16;--alert:#d23f36;--ship:#2f7fc7;--dup:#b85a9c;
+  --ok:#1f9e62;--warn:#c97e16;--alert:#d23f36;--ship:#2f7fc7;--dup:#b85a9c;--carry:#dd6b20;
   --shadow:0 14px 40px -22px rgba(40,55,80,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -73,6 +73,10 @@ h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:clamp(26px,4vw
 .chip{background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:500;cursor:pointer;transition:.18s;font-family:inherit}
 .chip:hover{border-color:var(--accent);color:var(--ink)}
 .chip.active{background:var(--accent);border-color:var(--accent);color:#1a1205;font-weight:700}
+.viewtoggle{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.viewtoggle .vt{background:none;border:none;color:var(--ink-dim);font-family:inherit;font-size:13.5px;font-weight:600;padding:7px 18px;border-radius:999px;cursor:pointer;transition:.15s}
+.viewtoggle .vt:hover{color:var(--ink)}
+.viewtoggle .vt.active{background:var(--accent);color:#fff;font-weight:700}
 .search{margin-inline-start:auto;position:relative}
 .search input{background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--ink);padding:9px 38px 9px 16px;font-size:13.5px;font-family:inherit;width:230px;outline:none;transition:.18s}
 .search input:focus{border-color:var(--accent)}
@@ -118,7 +122,11 @@ tr.row-flag{background:rgba(226,86,77,.06)}
 tr.row-flag:hover{background:rgba(226,86,77,.10)}
 tr.row-done{opacity:.62}
 tr.row-dup{box-shadow:inset 3px 0 0 var(--dup);background:rgba(217,142,192,.07)}
-.dup-tag{display:inline-block;margin-inline-start:8px;background:rgba(217,142,192,.18);color:#e0a9cf;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.dup-tag{display:inline-block;margin-inline-start:8px;background:rgba(184,90,156,.16);color:#a8458c;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.carry-tag{display:inline-block;margin-inline-start:8px;background:var(--carry);color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap}
+tr.row-carry{box-shadow:inset 4px 0 0 var(--carry);background:rgba(221,107,32,.06)}
+tr.row-carry:hover{background:rgba(221,107,32,.11)}
+.kpi.carry .val{color:var(--carry)}.kpi.carry::before{background:var(--carry)}
 .btn-deliver{background:none;border:1px solid var(--line);color:var(--ink-dim);font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
 .btn-deliver:hover{border-color:var(--ok);color:var(--ok)}
 .plate{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink-dim);direction:ltr;display:inline-block}
@@ -213,6 +221,13 @@ footer b{color:var(--accent-soft)}
   </div>
 
   <section class="kpis" id="kpis"></section>
+  <div class="controls" style="margin-bottom:12px">
+    <div class="viewtoggle" id="viewToggle">
+      <button class="vt active" data-v="active">⚡ פעיל עכשיו</button>
+      <button class="vt" data-v="carry">📂 פתוח מחודש קודם</button>
+      <button class="vt" data-v="months">📅 לפי חודש</button>
+    </div>
+  </div>
   <div class="controls" id="agentChips"></div>
   <div class="controls" style="margin-top:-6px">
     <div class="search">
@@ -288,7 +303,7 @@ const DELIVERY_WARN_H   = 72;
 
 const palette=['#c8a04f','#5aa9e6','#3fb27f','#d98ec0','#e0a13c','#9b8be6','#e2564d','#6ec6b0'];
 let DATA=[]; let agentColor={};
-let state={agent:'all',q:'',sortKey:'received',sortDir:-1,collapsed:{}};
+let state={agent:'all',q:'',sortKey:'received',sortDir:-1,collapsed:{},view:'active'};
 
 function parseCSV(text){
   const rows=[];let row=[],cur='',inQ=false;
@@ -345,6 +360,14 @@ function computeStatus(r){
 }
 
 function dupSet(){const c={};DATA.forEach(r=>{const o=(r.order||'').trim();if(o)c[o]=(c[o]||0)+1;});return new Set(Object.keys(c).filter(o=>c[o]>1));}
+function curMonthKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+// פתוח מקודם: לא נמסר, וההזמנה מחודש קלנדרי קודם לחודש הנוכחי
+function isCarryover(r){
+  if(r.delivered && !isNaN(new Date(r.delivered)))return false;
+  const mk=monthKey(r.received);
+  if(mk==='9999-99')return false;
+  return mk<curMonthKey();
+}
 
 function render(){
   const dups=dupSet();
@@ -358,15 +381,13 @@ function render(){
   const ship=scope.filter(r=>r._st.phase==='ship').length;
   const done=scope.filter(r=>r._st.phase==='done').length;
   const flags=scope.filter(r=>r._st.flag).length;
+  const carry=scope.filter(r=>isCarryover(r)).length;
   document.getElementById('kpis').innerHTML=`
     <div class="kpi"><div class="lbl">בהכנה</div><div class="val">${prep}</div></div>
     <div class="kpi ship"><div class="lbl">בדרך / להכנת מסירה</div><div class="val">${ship}</div></div>
     <div class="kpi ok"><div class="lbl">נמסרו</div><div class="val">${done}</div></div>
-    <div class="kpi ${flags?'alert':''}"><div class="lbl">דגלים לטיפול</div><div class="val">${flags}</div></div>`;
-
-  const groups={};
-  rows.forEach(r=>{const k=monthKey(r.received);(groups[k]=groups[k]||[]).push(r);});
-  const keys=Object.keys(groups).sort().reverse();
+    <div class="kpi ${flags?'alert':''}"><div class="lbl">דגלים לטיפול</div><div class="val">${flags}</div></div>
+    ${carry?`<div class="kpi carry"><div class="lbl">פתוח מחודש קודם</div><div class="val">${carry}</div></div>`:''}`;
 
   const sortRows=arr=>arr.sort((a,b)=>{
     if(state.sortKey==='status'){if(a._st.sort!==b._st.sort)return (a._st.sort-b._st.sort)*state.sortDir;}
@@ -374,9 +395,84 @@ function render(){
     if(state.sortKey==='received'||state.sortKey==='shipped'){av=new Date(av||0);bv=new Date(bv||0);}
     if(av<bv)return -1*state.sortDir;if(av>bv)return 1*state.sortDir;return 0;});
 
+  // בונה שורת טבלה אחת
+  const rowHtml=r=>{
+    const isDup=dups.has((r.order||'').trim());
+    const carry=isCarryover(r);
+    const rec=fmtDate(r.received);
+    let rowcls='';if(r._st.phase==='done')rowcls='row-done';else if(r._st.flag)rowcls='row-flag';
+    if(carry)rowcls+=' row-carry';
+    if(isDup)rowcls+=' row-dup';
+    const shipCell=r.shipped&&!isNaN(new Date(r.shipped))
+      ?`<b>${fmtDate(r.shipped).date}</b><div class="sub2">${fmtDate(r.shipped).time}${r.plate?' · <span class="plate">'+r.plate+'</span>':''}</div>`
+      :'<span style="color:var(--ink-dim)">—</span>';
+    const action=r._st.phase==='done'
+      ? `<span class="status st-done">${fmtDate(r.delivered).date}</span>`
+      : `<button class="btn-deliver" data-order="${r.order}">סמן כנמסר</button>`;
+    const carryTag=carry?`<span class="carry-tag">📂 פתוח · ${HEB_MONTHS[+monthKey(r.received).split('-')[1]-1]}</span>`:'';
+    return `<tr class="${rowcls}">
+      <td><span class="ordnum">${r.order}</span>${carryTag}${isDup?'<span class="dup-tag">כפילות</span>':''}</td>
+      <td><span class="agent-tag"><span class="dot" style="background:${agentColor[r.agent]||'#888'}"></span>${r.agent}</span></td>
+      <td class="cust">${r.customer}${r.model?'<div class="sub2">'+r.model+'</div>':''}</td>
+      <td class="when hide-sm"><b>${rec.date}</b><div class="sub2">${rec.time}</div></td>
+      <td class="when">${shipCell}</td>
+      <td><span class="status ${r._st.cls}">${r._st.label}</span><div class="sub2">${r._st.detail}</div></td>
+      <td>${action}</td>
+    </tr>`;
+  };
+  const tableHead=`<thead><tr>
+    <th data-k="order">הזמנה</th><th data-k="agent">נציג</th><th data-k="customer">לקוח / דגם</th>
+    <th data-k="received" class="hide-sm">נכנס להכנה</th><th data-k="shipped">שולח / בדרך</th>
+    <th data-k="status">סטטוס</th><th>מסירה</th></tr></thead>`;
+
   const cont=document.getElementById('months');
   if(!rows.length){cont.innerHTML='';const s=document.getElementById('state');s.style.display='block';s.className='state';s.textContent='אין הזמנות תואמות';return;}
   document.getElementById('state').style.display='none';
+
+  if(state.view==='active'){
+    // תצוגת "פעיל עכשיו" — כל מה שלא נמסר, ממוין לפי דחיפות, בלי קשר לחודש
+    const active=rows.filter(r=>r._st.phase!=='done');
+    active.sort((a,b)=>{
+      const ca=isCarryover(a)?1:0,cb=isCarryover(b)?1:0;
+      if(ca!==cb)return cb-ca;                                       // פתוח מחודש קודם — קודם כל
+      if(b._st.sort!==a._st.sort)return b._st.sort-a._st.sort;       // דגל→שילוח→הכנה
+      const ah=a.shipped?hoursSince(a.shipped):-1,bh=b.shipped?hoursSince(b.shipped):-1;
+      return bh-ah;                                                  // הוותיק ביותר בשלב קודם
+    });
+    if(!active.length){
+      cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">🎉 אין רכבים פעילים — הכל נמסר</div></div>';
+    }else{
+      cont.innerHTML=`<div class="tablecard"><table>${tableHead}<tbody>${active.map(rowHtml).join('')}</tbody></table></div>`;
+    }
+    cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
+    cont.querySelectorAll('thead th[data-k]').forEach(th=>{th.onclick=()=>{
+      const k=th.dataset.k;if(state.sortKey===k)state.sortDir*=-1;else{state.sortKey=k;state.sortDir=(k==='received'||k==='shipped')?-1:1;}
+      state.view='months';syncToggle();render();};});
+    return;
+  }
+
+  if(state.view==='carry'){
+    // תצוגת "פתוח מקודם" — רק הזמנות פתוחות מחודש קלנדרי קודם
+    const carryRows=rows.filter(isCarryover);
+    carryRows.sort((a,b)=>{
+      const ma=monthKey(a.received),mb=monthKey(b.received);
+      if(ma!==mb)return ma<mb?-1:1;                                   // הוותיק ביותר קודם
+      if(b._st.sort!==a._st.sort)return b._st.sort-a._st.sort;
+      const ah=a.shipped?hoursSince(a.shipped):-1,bh=b.shipped?hoursSince(b.shipped):-1;return bh-ah;
+    });
+    if(!carryRows.length){
+      cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">🎉 אין רכבים פתוחים מחודש קודם — הכל מעודכן</div></div>';
+    }else{
+      cont.innerHTML=`<div class="tablecard"><table>${tableHead}<tbody>${carryRows.map(rowHtml).join('')}</tbody></table></div>`;
+    }
+    cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
+    return;
+  }
+
+  // תצוגת "לפי חודש"
+  const groups={};
+  rows.forEach(r=>{const k=monthKey(r.received);(groups[k]=groups[k]||[]).push(r);});
+  const keys=Object.keys(groups).sort().reverse();
 
   cont.innerHTML=keys.map(k=>{
     const arr=sortRows(groups[k]);
@@ -384,27 +480,7 @@ function render(){
     arr.forEach(r=>{c[r._st.phase]++;if(r._st.flag)c.flag++;});
     const collapsed=state.collapsed[k]?'collapsed':'';
     const mini=`<span class="s-prep">${c.prep} בהכנה</span><span class="s-ship">${c.ship} בדרך</span><span class="s-done">${c.done} נמסרו</span>${c.flag?`<span class="s-flag">${c.flag} דגל</span>`:''}`;
-    const body=arr.map(r=>{
-      const isDup=dups.has((r.order||'').trim());
-      const rec=fmtDate(r.received);
-      let rowcls='';if(r._st.phase==='done')rowcls='row-done';else if(r._st.flag)rowcls='row-flag';
-      if(isDup)rowcls+=' row-dup';
-      const shipCell=r.shipped&&!isNaN(new Date(r.shipped))
-        ?`<b>${fmtDate(r.shipped).date}</b><div class="sub2">${fmtDate(r.shipped).time}${r.plate?' · <span class="plate">'+r.plate+'</span>':''}</div>`
-        :'<span style="color:var(--ink-dim)">—</span>';
-      const action=r._st.phase==='done'
-        ? `<span class="status st-done">${fmtDate(r.delivered).date}</span>`
-        : `<button class="btn-deliver" data-order="${r.order}">סמן כנמסר</button>`;
-      return `<tr class="${rowcls}">
-        <td><span class="ordnum">${r.order}</span>${isDup?'<span class="dup-tag">כפילות</span>':''}</td>
-        <td><span class="agent-tag"><span class="dot" style="background:${agentColor[r.agent]||'#888'}"></span>${r.agent}</span></td>
-        <td class="cust">${r.customer}${r.model?'<div class="sub2">'+r.model+'</div>':''}</td>
-        <td class="when hide-sm"><b>${rec.date}</b><div class="sub2">${rec.time}</div></td>
-        <td class="when">${shipCell}</td>
-        <td><span class="status ${r._st.cls}">${r._st.label}</span><div class="sub2">${r._st.detail}</div></td>
-        <td>${action}</td>
-      </tr>`;
-    }).join('');
+    const body=arr.map(rowHtml).join('');
     return `<div class="month-block ${collapsed}" data-mk="${k}">
       <div class="month-bar">
         <span class="caret">▼</span>
@@ -412,20 +488,7 @@ function render(){
         <span class="mcount">${arr.length} הזמנות</span>
         <span class="mmini">${mini}</span>
       </div>
-      <div class="tablecard">
-        <table>
-          <thead><tr>
-            <th data-k="order">הזמנה</th>
-            <th data-k="agent">נציג</th>
-            <th data-k="customer">לקוח / דגם</th>
-            <th data-k="received" class="hide-sm">נכנס להכנה</th>
-            <th data-k="shipped">שולח / בדרך</th>
-            <th data-k="status">סטטוס</th>
-            <th>מסירה</th>
-          </tr></thead>
-          <tbody>${body}</tbody>
-        </table>
-      </div>
+      <div class="tablecard"><table>${tableHead}<tbody>${body}</tbody></table></div>
     </div>`;
   }).join('');
 
@@ -437,8 +500,12 @@ function render(){
   cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
 }
 
-function buildChips(){
-  const agents=[...new Set(DATA.map(d=>d.agent))];
+function syncToggle(){
+  document.querySelectorAll('#viewToggle .vt').forEach(b=>b.classList.toggle('active',b.dataset.v===state.view));
+}
+document.querySelectorAll('#viewToggle .vt').forEach(b=>{b.onclick=()=>{state.view=b.dataset.v;syncToggle();render();};});
+
+function buildChips(){  const agents=[...new Set(DATA.map(d=>d.agent))];
   agents.forEach((a,i)=>{if(!agentColor[a])agentColor[a]=palette[i%palette.length];});
   const c=document.getElementById('agentChips');
   const mk=(l,v)=>`<button class="chip ${state.agent===v?'active':''}" data-a="${v}">${l}</button>`;

@@ -248,12 +248,12 @@ footer b{color:var(--accent-soft)}
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h3>סימון מסירה</h3>
-    <p>בחר תאריך מסירה והעתק. אחר כך פתח את ה‑Google Sheet, מצא את שורת ההזמנה, והדבק את התאריך בעמודה <b style="color:var(--ok)">delivered</b>.</p>
+    <p>בחר תאריך מסירה והעתק. הדבק בתחתית ה‑Google Sheet כשורה חדשה (בעמודה <b>order</b>) — הדשבורד יצליב לבד ויסמן את ההזמנה כ"נמסר". <span style="color:var(--ink-dim)">לחלופין אפשר לרשום את התאריך ישירות בעמודה delivered של ההזמנה.</span></p>
     <div class="field"><label>הזמנה</label><div class="mono" id="mOrder" style="flex:1;margin:0"></div></div>
     <div class="field"><label>תאריך מסירה</label><input type="date" id="mDate"></div>
     <div class="mono" id="mPaste"></div>
     <div class="modal-actions">
-      <button class="m-copy" id="mCopy">העתק תאריך</button>
+      <button class="m-copy" id="mCopy">העתק שורה</button>
       <button class="m-cancel" id="mCancel">סגור</button>
     </div>
   </div>
@@ -359,7 +359,20 @@ function computeStatus(r){
   return {phase:'prep',label:'בהכנה',cls:'st-prep',sort:1,flag:bd>10,detail:`${bd} ימי עסקים`};
 }
 
-function dupSet(){const c={};DATA.forEach(r=>{const o=(r.order||'').trim();if(o)c[o]=(c[o]||0)+1;});return new Set(Object.keys(c).filter(o=>c[o]>1));}
+// מיזוג שורות לפי מספר הזמנה — מאחד נתוני הזמנה + שילוח + מסירה לעסקה אחת
+function mergeByOrder(rows){
+  const map={};
+  rows.forEach(r=>{
+    const o=(r.order||'').trim();if(!o)return;
+    if(!map[o])map[o]={order:o,agent:'',customer:'',received:'',shipped:'',plate:'',model:'',delivered:'',_receivedRows:0};
+    const m=map[o];
+    if(r.received)m._receivedRows++;
+    ['agent','customer','received','shipped','plate','model','delivered'].forEach(k=>{if(!m[k]&&r[k])m[k]=r[k];});
+  });
+  const out=Object.values(map);
+  out.forEach(m=>{m._dup=m._receivedRows>1;});   // כפילות אמיתית = ההזמנה הוזנה יותר מפעם אחת
+  return out;
+}
 function curMonthKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 // פתוח מקודם: לא נמסר, וההזמנה מחודש קלנדרי קודם לחודש הנוכחי
 function isCarryover(r){
@@ -370,7 +383,6 @@ function isCarryover(r){
 }
 
 function render(){
-  const dups=dupSet();
   let rows=DATA.map(r=>({...r,_st:computeStatus(r)}))
     .filter(r=>state.agent==='all'||r.agent===state.agent)
     .filter(r=>{if(!state.q)return true;const q=state.q.trim();
@@ -397,7 +409,7 @@ function render(){
 
   // בונה שורת טבלה אחת
   const rowHtml=r=>{
-    const isDup=dups.has((r.order||'').trim());
+    const isDup=!!r._dup;
     const carry=isCarryover(r);
     const rec=fmtDate(r.received);
     let rowcls='';if(r._st.phase==='done')rowcls='row-done';else if(r._st.flag)rowcls='row-flag';
@@ -523,14 +535,15 @@ function openDeliver(order){
   document.getElementById('mDate').value=iso;updatePaste();
   document.getElementById('modalBg').classList.add('open');
 }
-function updatePaste(){document.getElementById('mPaste').textContent=document.getElementById('mDate').value;}
+function deliverRow(){return [deliverOrder,'','','','','','',document.getElementById('mDate').value].join('\t');}
+function updatePaste(){document.getElementById('mPaste').textContent=deliverRow();}
 document.getElementById('mDate').oninput=updatePaste;
 document.getElementById('mCancel').onclick=()=>document.getElementById('modalBg').classList.remove('open');
 document.getElementById('modalBg').onclick=e=>{if(e.target.id==='modalBg')document.getElementById('modalBg').classList.remove('open');};
 document.getElementById('mCopy').onclick=()=>{
-  const v=document.getElementById('mDate').value;try{navigator.clipboard.writeText(v);}catch(e){}
-  const b=document.getElementById('mCopy');b.textContent='✓ הועתק — הדבק בעמודה delivered';
-  setTimeout(()=>{b.textContent='העתק תאריך';},2500);
+  const v=deliverRow();try{navigator.clipboard.writeText(v);}catch(e){}
+  const b=document.getElementById('mCopy');b.textContent='✓ הועתק — הדבק בתחתית ה‑Sheet';
+  setTimeout(()=>{b.textContent='העתק שורה';},2500);
 };
 
 /* פרסר .msg */
@@ -607,15 +620,15 @@ async function handleFiles(files){
     if(exists.length)html+='<div class="imp-note">כבר קיימות (לא הועתקו): '+exists.map(p=>p.order).join(', ')+'</div>';
     html+='</div>';
   }
-  const shipPaste=ships.map(s=>[s.shipped||'',s.plate||'',s.model||''].join('\t')).join('\n');
+  const shipPaste=ships.map(s=>[s.order,'','','',s.shipped||'',s.plate||'',s.model||'',''].join('\t')).join('\n');
   if(ships.length){
     html+='<div class="imp-block"><h3 style="color:var(--ship)">🚚 מיילי שילוח</h3>';
     html+='<div class="imp-summary"><span class="imp-pill ship">'+ships.length+' שולחו</span></div>';
-    ships.forEach(s=>{const known=existing.has(s.order);
-      html+=`<div class="ship-line">הזמנה <b>${s.order}</b> ${known?'':'<span style="color:var(--warn)">(לא נמצאה ב-Sheet — ודא שייבאת קודם את מייל ההזמנה)</span>'}<br>
+    ships.forEach(s=>{
+      html+=`<div class="ship-line">הזמנה <b>${s.order}</b><br>
         תאריך שילוח: <b>${s.shipped||'—'}</b>${s.plate?' · רישוי: '+s.plate:''}${s.model?' · '+s.model:''}</div>`;});
-    html+='<div class="imp-note" style="margin-top:12px"><b>לעדכון ב‑Sheet:</b> מצא את שורת ההזמנה והדבק את הערכים בעמודות <b>shipped</b> / <b>plate</b> / <b>model</b>. הבלוק למטה מסודר בסדר הופעת ההזמנות למעלה.</div>';
-    html+='<div class="imp-actions" style="margin-top:10px"><button class="btn-copy" id="copyShip">העתק נתוני שילוח</button></div>';
+    html+='<div class="imp-note" style="margin-top:12px"><b>פשוט הדבק בתחתית ה‑Sheet כשורות חדשות</b> (בתא הריק הראשון בעמודה <b>order</b>, מתחת לשורה האחרונה). הדשבורד יצליב לבד לפי מספר הזמנה ויאחד עם שורת ההזמנה הקיימת — אין צורך לחפש שורה.</div>';
+    html+='<div class="imp-actions" style="margin-top:10px"><button class="btn-copy" id="copyShip">העתק שורות שילוח</button></div>';
     html+='<textarea class="paste-box" rows="'+Math.min(ships.length+1,5)+'" readonly id="boxShip">'+shipPaste.replace(/</g,'&lt;')+'</textarea>';
     html+='</div>';
   }
@@ -645,7 +658,7 @@ async function load(){
   try{
     const res=await fetch(CSV_URL+(CSV_URL.includes('?')?'&':'?')+'t='+Date.now());
     if(!res.ok)throw new Error('HTTP '+res.status);
-    DATA=rowsToObjects(parseCSV(await res.text()));
+    DATA=mergeByOrder(rowsToObjects(parseCSV(await res.text())));
     if(!DATA.length){setState('הגיליון ריק או שהכותרות לא תואמות.',true);}
     else{buildChips();render();}
     const n=new Date();const p=x=>String(x).padStart(2,'0');

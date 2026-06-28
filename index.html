@@ -68,6 +68,13 @@ h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:clamp(26px,4vw
 .kpi.alert .val{color:var(--alert)}.kpi.alert::before{background:var(--alert)}
 .kpi.ship .val{color:var(--ship)}.kpi.ship::before{background:var(--ship)}
 .kpi.ok .val{color:var(--ok)}.kpi.ok::before{background:var(--ok)}
+.kpi.total{background:linear-gradient(160deg,#fff,#fbf5e8)}.kpi.total .val{color:var(--accent)}.kpi.total::before{background:var(--accent);width:4px;opacity:1}
+.acount{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px}
+.acount.big{font-size:18px;color:var(--accent)}
+.acount.c-ship{color:var(--ship)}.acount.c-ok{color:var(--ok)}.acount.c-alert{color:var(--alert)}
+tr.agent-total{background:var(--panel-2);font-size:15px}
+tr.agent-total td{border-top:2px solid var(--line)}
+tr.agent-total .acount{color:var(--ink)}.tr.agent-total .acount.big{color:var(--accent)}
 
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
 .chip{background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:500;cursor:pointer;transition:.18s;font-family:inherit}
@@ -83,6 +90,12 @@ h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:clamp(26px,4vw
 .search svg{position:absolute;inset-inline-end:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--ink-dim);fill:none;stroke-width:2}
 
 .month-block{margin-bottom:20px}
+.stage-block{margin-bottom:20px}
+.stage-bar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-radius:10px;font-weight:800;font-size:14.5px;margin-bottom:2px}
+.stage-bar .stage-count{margin-inline-start:auto;background:rgba(255,255,255,.6);padding:2px 11px;border-radius:999px;font-size:12.5px;font-weight:700}
+.stage-bar.s-urgent{background:rgba(210,63,54,.13);color:var(--alert)}
+.stage-bar.s-transit{background:rgba(47,127,199,.13);color:var(--ship)}
+.stage-bar.s-prepst{background:rgba(184,144,47,.14);color:var(--accent-soft)}
 .month-bar{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:13px 18px;cursor:pointer;transition:.15s;user-select:none}
 .month-bar:hover{border-color:var(--accent)}
 .month-bar .caret{transition:transform .2s;color:var(--accent);font-size:13px}
@@ -223,9 +236,9 @@ footer b{color:var(--accent-soft)}
   <section class="kpis" id="kpis"></section>
   <div class="controls" style="margin-bottom:12px">
     <div class="viewtoggle" id="viewToggle">
-      <button class="vt active" data-v="active">⚡ פעיל עכשיו</button>
-      <button class="vt" data-v="carry">📂 פתוח מחודש קודם</button>
+      <button class="vt active" data-v="active">📋 פתוחות</button>
       <button class="vt" data-v="months">📅 לפי חודש</button>
+      <button class="vt" data-v="agents">👥 לפי נציג</button>
     </div>
   </div>
   <div class="controls" id="agentChips"></div>
@@ -240,7 +253,7 @@ footer b{color:var(--accent-soft)}
   <div class="state" id="state"><div class="spinner"></div>טוען נתונים מ‑Google Sheet…</div>
 
   <footer>
-    יעד מסירה: עד 48 שעות מהשילוח · <b style="color:var(--warn)">כתום</b> 48–72ש' · <b style="color:var(--alert)">אדום + דגל</b> מעל 72ש' · כפילות לפי מספר הזמנה מסומנת בוורוד<br>
+    דגל אדום: מעל 10 ימי עסקים מרגע ההזמנה ועדיין לא נמסר · יעד מסירה: עד 48 שעות מהשילוח (צבע הסטטוס: כתום 48–72ש', אדום מעל 72ש') · כפילות לפי מספר הזמנה מסומנת בוורוד<br>
     סוף שבוע (שישי+שבת) לא נספר בשלב ההכנה · הזמנות מקובצות לפי חודש הכניסה להכנה
   </footer>
 </div>
@@ -303,7 +316,7 @@ const DELIVERY_WARN_H   = 72;
 
 const palette=['#c8a04f','#5aa9e6','#3fb27f','#d98ec0','#e0a13c','#9b8be6','#e2564d','#6ec6b0'];
 let DATA=[]; let agentColor={};
-let state={agent:'all',q:'',sortKey:'received',sortDir:-1,collapsed:{},view:'active'};
+let state={agent:'all',q:'',sortKey:'received',sortDir:-1,collapsed:{},view:'active',agentMonth:'__cur__'};
 
 function parseCSV(text){
   const rows=[];let row=[],cur='',inQ=false;
@@ -343,20 +356,21 @@ const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','י
 function monthName(key){if(key==='9999-99')return'ללא תאריך';const a=key.split('-');return `${HEB_MONTHS[+a[1]-1]} ${a[0]}`;}
 
 function computeStatus(r){
+  const bd=businessDays(r.received);
   if(r.delivered && !isNaN(new Date(r.delivered))){
     const took=r.shipped?hoursBetween(r.shipped,r.delivered):null;
     return {phase:'done',label:'נמסר ✓',cls:'st-done',sort:0,flag:false,
       detail: took!=null?`מסירה ${Math.round(took)}ש' מהשילוח`:'נמסר'};
   }
+  const flag = bd>10;   // עיכוב: מעל 10 ימי עסקים מרגע ההזמנה ועדיין לא נמסר
   if(r.shipped && !isNaN(new Date(r.shipped))){
     const h=hoursSince(r.shipped);
-    let cls='st-ship',label='בהכנה למסירה',flag=false;
-    if(h>DELIVERY_WARN_H){cls='st-ship-alert';label='חריגה במסירה';flag=true;}
+    let cls='st-ship',label='בהכנה למסירה';
+    if(h>DELIVERY_WARN_H){cls='st-ship-alert';label='חריגה במסירה';}
     else if(h>DELIVERY_TARGET_H){cls='st-ship-warn';label='מתקרב ליעד';}
-    return {phase:'ship',label,cls,sort:flag?3:2,flag,detail:`${Math.round(h)} שעות מהשילוח`};
+    return {phase:'ship',label,cls,sort:flag?4:2,flag,detail:`${Math.round(h)} שעות מהשילוח · ${bd} ימי עסקים מההזמנה`};
   }
-  const bd=businessDays(r.received);
-  return {phase:'prep',label:'בהכנה',cls:'st-prep',sort:1,flag:bd>10,detail:`${bd} ימי עסקים`};
+  return {phase:'prep',label:'בהכנה',cls:'st-prep',sort:flag?3:1,flag,detail:`${bd} ימי עסקים`};
 }
 
 // מיזוג שורות לפי מספר הזמנה — מאחד נתוני הזמנה + שילוח + מסירה לעסקה אחת
@@ -390,16 +404,14 @@ function render(){
 
   const scope=DATA.map(r=>({...r,_st:computeStatus(r)})).filter(r=>state.agent==='all'||r.agent===state.agent);
   const prep=scope.filter(r=>r._st.phase==='prep').length;
-  const ship=scope.filter(r=>r._st.phase==='ship').length;
   const done=scope.filter(r=>r._st.phase==='done').length;
   const flags=scope.filter(r=>r._st.flag).length;
-  const carry=scope.filter(r=>isCarryover(r)).length;
+  const total=scope.length;                                   // סה"כ כל העסקאות (כולל נמסרו) — לא יורד
   document.getElementById('kpis').innerHTML=`
+    <div class="kpi total"><div class="lbl">סה״כ עסקאות</div><div class="val">${total}</div></div>
     <div class="kpi"><div class="lbl">בהכנה</div><div class="val">${prep}</div></div>
-    <div class="kpi ship"><div class="lbl">בדרך / להכנת מסירה</div><div class="val">${ship}</div></div>
     <div class="kpi ok"><div class="lbl">נמסרו</div><div class="val">${done}</div></div>
-    <div class="kpi ${flags?'alert':''}"><div class="lbl">דגלים לטיפול</div><div class="val">${flags}</div></div>
-    ${carry?`<div class="kpi carry"><div class="lbl">פתוח מחודש קודם</div><div class="val">${carry}</div></div>`:''}`;
+    <div class="kpi ${flags?'alert':''}"><div class="lbl">דגלים · מעל 10 ימי עסקים</div><div class="val">${flags}</div></div>`;
 
   const sortRows=arr=>arr.sort((a,b)=>{
     if(state.sortKey==='status'){if(a._st.sort!==b._st.sort)return (a._st.sort-b._st.sort)*state.sortDir;}
@@ -442,42 +454,75 @@ function render(){
   document.getElementById('state').style.display='none';
 
   if(state.view==='active'){
-    // תצוגת "פעיל עכשיו" — כל מה שלא נמסר, ממוין לפי דחיפות, בלי קשר לחודש
-    const active=rows.filter(r=>r._st.phase!=='done');
-    active.sort((a,b)=>{
-      const ca=isCarryover(a)?1:0,cb=isCarryover(b)?1:0;
-      if(ca!==cb)return cb-ca;                                       // פתוח מחודש קודם — קודם כל
-      if(b._st.sort!==a._st.sort)return b._st.sort-a._st.sort;       // דגל→שילוח→הכנה
-      const ah=a.shipped?hoursSince(a.shipped):-1,bh=b.shipped?hoursSince(b.shipped):-1;
-      return bh-ah;                                                  // הוותיק ביותר בשלב קודם
-    });
-    if(!active.length){
-      cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">🎉 אין רכבים פעילים — הכל נמסר</div></div>';
-    }else{
-      cont.innerHTML=`<div class="tablecard"><table>${tableHead}<tbody>${active.map(rowHtml).join('')}</tbody></table></div>`;
+    // תצוגת "פתוחות" — כל מה שלא נמסר, מקובץ לפי שלב
+    const open=rows.filter(r=>r._st.phase!=='done');
+    if(!open.length){
+      cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">🎉 אין עסקאות פתוחות — הכל נמסר</div></div>';
+      return;
     }
+    const byUrg=(a,b)=>{
+      if(b._st.sort!==a._st.sort)return b._st.sort-a._st.sort;
+      const ah=a.shipped?hoursSince(a.shipped):-1,bh=b.shipped?hoursSince(b.shipped):-1;return bh-ah;
+    };
+    // קיבוץ לפי שלב — כל פריט בקבוצה אחת בלבד
+    const g1=[],g2=[],g3=[];
+    open.forEach(r=>{
+      if(r._st.flag||isCarryover(r))g1.push(r);        // דגלים / פתוח מחודש קודם
+      else if(r._st.phase==='ship')g2.push(r);          // בדרך
+      else g3.push(r);                                   // בהכנה
+    });
+    g1.sort(byUrg);g2.sort(byUrg);g3.sort(byUrg);
+    const section=(title,arr,cls)=>arr.length?`<div class="stage-block">
+        <div class="stage-bar ${cls}"><span class="stage-title">${title}</span><span class="stage-count">${arr.length}</span></div>
+        <div class="tablecard"><table>${tableHead}<tbody>${arr.map(rowHtml).join('')}</tbody></table></div>
+      </div>`:'';
+    cont.innerHTML = section('🚩 דגלים · פתוח מחודש קודם',g1,'s-urgent')
+      + section('🚚 בדרך · להכנת מסירה',g2,'s-transit')
+      + section('🔧 בהכנה',g3,'s-prepst');
     cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
-    cont.querySelectorAll('thead th[data-k]').forEach(th=>{th.onclick=()=>{
-      const k=th.dataset.k;if(state.sortKey===k)state.sortDir*=-1;else{state.sortKey=k;state.sortDir=(k==='received'||k==='shipped')?-1:1;}
-      state.view='months';syncToggle();render();};});
     return;
   }
 
-  if(state.view==='carry'){
-    // תצוגת "פתוח מקודם" — רק הזמנות פתוחות מחודש קלנדרי קודם
-    const carryRows=rows.filter(isCarryover);
-    carryRows.sort((a,b)=>{
-      const ma=monthKey(a.received),mb=monthKey(b.received);
-      if(ma!==mb)return ma<mb?-1:1;                                   // הוותיק ביותר קודם
-      if(b._st.sort!==a._st.sort)return b._st.sort-a._st.sort;
-      const ah=a.shipped?hoursSince(a.shipped):-1,bh=b.shipped?hoursSince(b.shipped):-1;return bh-ah;
-    });
-    if(!carryRows.length){
-      cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">🎉 אין רכבים פתוחים מחודש קודם — הכל מעודכן</div></div>';
-    }else{
-      cont.innerHTML=`<div class="tablecard"><table>${tableHead}<tbody>${carryRows.map(rowHtml).join('')}</tbody></table></div>`;
-    }
-    cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
+  if(state.view==='agents'){
+    // תצוגת "לפי נציג" — סיכום מספרים לכל נציג, לפי חודש קלנדרי נבחר
+    const allRows=DATA.map(r=>({...r,_st:computeStatus(r)}))
+      .filter(r=>{if(!state.q)return true;const q=state.q.trim();return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q)||(r.plate||'').includes(q)||(r.model||'').includes(q);});
+    // חודשים זמינים
+    const months=[...new Set(allRows.map(r=>monthKey(r.received)).filter(m=>m!=='9999-99'))].sort().reverse();
+    const sel=state.agentMonth==='__cur__'?curMonthKey():state.agentMonth;
+    const scopeM = sel==='__all__' ? allRows : allRows.filter(r=>monthKey(r.received)===sel);
+    // בורר חודש
+    const chip=(lbl,val,active)=>`<button class="chip ${active?'active':''}" data-am="${val}">${lbl}</button>`;
+    let selUI=`<div class="controls" style="margin-bottom:14px">`+
+      chip('כל החודשים','__all__',state.agentMonth==='__all__')+
+      months.map(m=>chip(monthName(m),m,(state.agentMonth==='__cur__'?curMonthKey():state.agentMonth)===m)).join('')+`</div>`;
+    // קיבוץ לפי נציג
+    const byAgent={};
+    scopeM.forEach(r=>{const a=r.agent||'—';(byAgent[a]=byAgent[a]||[]).push(r);});
+    const agentNames=Object.keys(byAgent).sort((a,b)=>byAgent[b].length-byAgent[a].length);
+    const cell=(n,cls)=>`<td><span class="acount ${cls||''}">${n}</span></td>`;
+    let tot={t:0,p:0,s:0,d:0,f:0};
+    const rowsHtml=agentNames.map(a=>{
+      const arr=byAgent[a];
+      const p=arr.filter(r=>r._st.phase==='prep').length;
+      const s=arr.filter(r=>r._st.phase==='ship').length;
+      const d=arr.filter(r=>r._st.phase==='done').length;
+      const f=arr.filter(r=>r._st.flag).length;
+      const delivered=arr.filter(r=>r.delivered&&r.shipped&&!isNaN(new Date(r.delivered))&&!isNaN(new Date(r.shipped)));
+      const avg=delivered.length?Math.round(delivered.reduce((x,r)=>x+hoursBetween(r.shipped,r.delivered),0)/delivered.length):null;
+      tot.t+=arr.length;tot.p+=p;tot.s+=s;tot.d+=d;tot.f+=f;
+      return `<tr>
+        <td><span class="agent-tag"><span class="dot" style="background:${agentColor[a]||'#888'}"></span><b>${a}</b></span></td>
+        ${cell(arr.length,'big')}${cell(p)}${cell(s,'c-ship')}${cell(d,'c-ok')}${cell(f||'',f?'c-alert':'')}
+        <td><span class="acount">${avg!=null?avg+'ש׳':'—'}</span></td>
+      </tr>`;
+    }).join('');
+    const totRow=`<tr class="agent-total">
+      <td><b>סה״כ</b></td>${cell(tot.t,'big')}${cell(tot.p)}${cell(tot.s,'c-ship')}${cell(tot.d,'c-ok')}${cell(tot.f||'',tot.f?'c-alert':'')}<td>—</td></tr>`;
+    cont.innerHTML=selUI+`<div class="tablecard"><table>
+      <thead><tr><th>נציג</th><th>סה״כ</th><th>בהכנה</th><th>בדרך</th><th>נמסרו</th><th>דגלים</th><th>זמן מסירה ממוצע</th></tr></thead>
+      <tbody>${rowsHtml||'<tr><td colspan="7" style="text-align:center;color:var(--ink-dim);padding:30px">אין נתונים לחודש זה</td></tr>'}${rowsHtml?totRow:''}</tbody></table></div>`;
+    cont.querySelectorAll('[data-am]').forEach(b=>{b.onclick=()=>{state.agentMonth=b.dataset.am;render();};});
     return;
   }
 
@@ -497,7 +542,7 @@ function render(){
       <div class="month-bar">
         <span class="caret">▼</span>
         <span class="mname">${monthName(k)}</span>
-        <span class="mcount">${arr.length} הזמנות</span>
+        <span class="mcount"><b style="color:var(--accent)">סה״כ ${arr.length}</b> · כולל נמסרו</span>
         <span class="mmini">${mini}</span>
       </div>
       <div class="tablecard"><table>${tableHead}<tbody>${body}</tbody></table></div>

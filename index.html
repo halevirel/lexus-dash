@@ -639,12 +639,16 @@ async function handleFiles(files){
   const result=document.getElementById('importResult');
   result.innerHTML='<div class="state" style="padding:20px"><div class="spinner"></div>מפרק קבצים…</div>';
   const existing=new Set(DATA.map(r=>(r.order||'').trim()));
-  const seen=new Set();const preps=[];const ships=[];let errors=0;
+  const existingMap={};DATA.forEach(r=>{existingMap[(r.order||'').trim()]=r;});
+  const seen=new Set();const seenShip=new Set();const preps=[];const ships=[];let errors=0;
   for(const f of files){
     if(!f.name.toLowerCase().endsWith('.msg'))continue;
     try{const info=classifyMsg(parseMsg(await f.arrayBuffer()));
       if(!info.order){errors++;continue;}
-      if(info.type==='ship')ships.push(info);
+      if(info.type==='ship'){
+        if(seenShip.has(info.order))continue;   // אותו שילוח פעמיים באותו ייבוא — פעם אחת בלבד
+        seenShip.add(info.order);ships.push(info);
+      }
       else{let status='new';if(existing.has(info.order))status='exists';else if(seen.has(info.order))status='dupfile';seen.add(info.order);preps.push({...info,status});}
     }catch(e){errors++;}
   }
@@ -665,16 +669,38 @@ async function handleFiles(files){
     if(exists.length)html+='<div class="imp-note">כבר קיימות (לא הועתקו): '+exists.map(p=>p.order).join(', ')+'</div>';
     html+='</div>';
   }
-  const shipPaste=ships.map(s=>[s.order,'','','',s.shipped||'',s.plate||'',s.model||'',''].join('\t')).join('\n');
+  // סיווג מיילי שילוח: מוכן לעדכון / כבר עודכן / ללא הזמנה
+  ships.forEach(s=>{
+    const o=(s.order||'').trim();const rec=existingMap[o];
+    if(!rec)s._sh='noorder';
+    else if(rec.shipped&&!isNaN(new Date(rec.shipped)))s._sh='hasship';
+    else s._sh='ready';
+  });
+  const shipReady=ships.filter(s=>s._sh==='ready'||s._sh==='noorder');   // רק אלה שצריך להעתיק
+  const shipDone=ships.filter(s=>s._sh==='hasship');
+  const shipPaste=shipReady.map(s=>[s.order,'','','',s.shipped||'',s.plate||'',s.model||'',''].join('\t')).join('\n');
   if(ships.length){
-    html+='<div class="imp-block"><h3 style="color:var(--ship)">🚚 מיילי שילוח</h3>';
-    html+='<div class="imp-summary"><span class="imp-pill ship">'+ships.length+' שולחו</span></div>';
+    html+='<div class="imp-block"><h3 style="color:var(--ship)">🚚 מיילי שילוח</h3><div class="imp-summary">';
+    const nReady=ships.filter(s=>s._sh==='ready').length;
+    const nNo=ships.filter(s=>s._sh==='noorder').length;
+    html+=`<span class="imp-pill ship">${nReady} מוכנים לעדכון</span>`;
+    if(shipDone.length)html+=`<span class="imp-pill dup">${shipDone.length} כבר עודכנו</span>`;
+    if(nNo)html+=`<span class="imp-pill err">${nNo} ללא הזמנה תואמת</span>`;
+    html+='</div>';
     ships.forEach(s=>{
-      html+=`<div class="ship-line">הזמנה <b>${s.order}</b><br>
+      const badge=s._sh==='ready'?'<span style="color:var(--ok);font-weight:700">✓ מוכן לעדכון</span>'
+        :s._sh==='hasship'?'<span style="color:var(--dup);font-weight:700">כבר עודכן שילוח — לא נכלל</span>'
+        :'<span style="color:var(--alert);font-weight:700">⚠ לא נמצאה הזמנה תואמת</span>';
+      html+=`<div class="ship-line">הזמנה <b>${s.order}</b> · ${badge}<br>
         תאריך שילוח: <b>${s.shipped||'—'}</b>${s.plate?' · רישוי: '+s.plate:''}${s.model?' · '+s.model:''}</div>`;});
-    html+='<div class="imp-note" style="margin-top:12px"><b>פשוט הדבק בתחתית ה‑Sheet כשורות חדשות</b> (בתא הריק הראשון בעמודה <b>order</b>, מתחת לשורה האחרונה). הדשבורד יצליב לבד לפי מספר הזמנה ויאחד עם שורת ההזמנה הקיימת — אין צורך לחפש שורה.</div>';
-    html+='<div class="imp-actions" style="margin-top:10px"><button class="btn-copy" id="copyShip">העתק שורות שילוח</button></div>';
-    html+='<textarea class="paste-box" rows="'+Math.min(ships.length+1,5)+'" readonly id="boxShip">'+shipPaste.replace(/</g,'&lt;')+'</textarea>';
+    if(ships.some(s=>s._sh==='noorder'))html+='<div class="imp-note" style="color:var(--warn)">⚠ הזמנות ללא התאמה — אם ייבאת אותן ממש עכשיו, לחץ "רענון" בדשבורד ונסה שוב. אחרת ודא שייבאת את מייל ההזמנה, או שמספר ההזמנה זהה בדיוק.</div>';
+    if(shipReady.length){
+      html+='<div class="imp-note" style="margin-top:12px"><b>הדבק בתחתית ה‑Sheet כשורות חדשות</b> (בתא הריק בעמודה <b>order</b>). הדשבורד יאחד לבד לפי מספר הזמנה. רק שילוחים שעדיין לא עודכנו נכללים כאן — מה שכבר עודכן הושמט כדי למנוע כפילות.</div>';
+      html+='<div class="imp-actions" style="margin-top:10px"><button class="btn-copy" id="copyShip">העתק שורות שילוח</button></div>';
+      html+='<textarea class="paste-box" rows="'+Math.min(shipReady.length+1,5)+'" readonly id="boxShip">'+shipPaste.replace(/</g,'&lt;')+'</textarea>';
+    }else{
+      html+='<div class="imp-note" style="margin-top:12px;color:var(--dup)">כל השילוחים כבר עודכנו ב‑Sheet — אין מה להוסיף.</div>';
+    }
     html+='</div>';
   }
   if(!preps.length&&!ships.length){html='<div class="imp-summary"><span class="imp-pill err">לא זוהו הזמנות'+(errors?` (${errors} שגיאות)`:'')+'</span></div>';}

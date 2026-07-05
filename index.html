@@ -348,9 +348,14 @@ function businessDays(fromISO){
 }
 function hoursSince(iso){const d=new Date(iso);if(isNaN(d))return 0;return (Date.now()-d.getTime())/36e5;}
 function hoursBetween(a,b){const d1=new Date(a),d2=new Date(b);if(isNaN(d1)||isNaN(d2))return null;return (d2-d1)/36e5;}
-function fmtDate(iso){const d=new Date(iso);if(isNaN(d))return{date:iso||'—',time:''};
+function fmtDate(iso){
+  if(!iso)return{date:'—',time:''};
+  const hasTime=typeof iso==='string'&&(iso.includes('T')||/\d{1,2}:\d{2}/.test(iso));
+  // תאריך בלבד — לפרסר כזמן מקומי כדי למנוע הזזת יום
+  const d=new Date(hasTime?iso:iso+'T00:00');
+  if(isNaN(d))return{date:iso||'—',time:''};
   const days=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];const p=n=>String(n).padStart(2,'0');
-  return{date:`${days[d.getDay()]}׳ ${p(d.getDate())}/${p(d.getMonth()+1)}`,time:`${p(d.getHours())}:${p(d.getMinutes())}`};}
+  return{date:`${days[d.getDay()]}׳ ${p(d.getDate())}/${p(d.getMonth()+1)}`,time:hasTime?`${p(d.getHours())}:${p(d.getMinutes())}`:''};}
 function monthKey(iso){const d=new Date(iso);if(isNaN(d))return'9999-99';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 function monthName(key){if(key==='9999-99')return'ללא תאריך';const a=key.split('-');return `${HEB_MONTHS[+a[1]-1]} ${a[0]}`;}
@@ -427,8 +432,9 @@ function render(){
     let rowcls='';if(r._st.phase==='done')rowcls='row-done';else if(r._st.flag)rowcls='row-flag';
     if(carry)rowcls+=' row-carry';
     if(isDup)rowcls+=' row-dup';
-    const shipCell=r.shipped&&!isNaN(new Date(r.shipped))
-      ?`<b>${fmtDate(r.shipped).date}</b><div class="sub2">${fmtDate(r.shipped).time}${r.plate?' · <span class="plate">'+r.plate+'</span>':''}</div>`
+    const shipF=r.shipped&&!isNaN(new Date(r.shipped))?fmtDate(r.shipped):null;
+    const shipCell=shipF
+      ?`<b>${shipF.date}</b><div class="sub2">${[shipF.time,r.plate?'<span class="plate">'+r.plate+'</span>':''].filter(Boolean).join(' · ')}</div>`
       :'<span style="color:var(--ink-dim)">—</span>';
     const action=r._st.phase==='done'
       ? `<span class="status st-done">${fmtDate(r.delivered).date}</span>`
@@ -438,7 +444,7 @@ function render(){
       <td><span class="ordnum">${r.order}</span>${carryTag}${isDup?'<span class="dup-tag">כפילות</span>':''}</td>
       <td><span class="agent-tag"><span class="dot" style="background:${agentColor[r.agent]||'#888'}"></span>${r.agent}</span></td>
       <td class="cust">${r.customer}${r.model?'<div class="sub2">'+r.model+'</div>':''}</td>
-      <td class="when hide-sm"><b>${rec.date}</b><div class="sub2">${rec.time}</div></td>
+      <td class="when hide-sm"><b>${rec.date}</b>${rec.time?'<div class="sub2">'+rec.time+'</div>':''}</td>
       <td class="when">${shipCell}</td>
       <td><span class="status ${r._st.cls}">${r._st.label}</span><div class="sub2">${r._st.detail}</div></td>
       <td>${action}</td>
@@ -619,7 +625,7 @@ function parseMsg(arrayBuffer){
   function prop(tag){let b=getStream('__substg1.0_'+tag+'001F');if(b)return decU16(b);b=getStream('__substg1.0_'+tag+'001E');if(b){try{return new TextDecoder('windows-1255').decode(b);}catch(e){return null;}}return null;}
   return {subject:prop('0037')||'',body:prop('1000')||'',header:prop('007D')||''};
 }
-function isoFromHeader(header){const m=(header||'').match(/\nDate:\s*(.+)/);if(!m)return null;const dt=new Date(m[1].trim());if(isNaN(dt))return null;const p=n=>String(n).padStart(2,'0');return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`;}
+function isoFromHeader(header){const m=(header||'').match(/\nDate:\s*(.+)/);if(!m)return null;const dt=new Date(m[1].trim());if(isNaN(dt))return null;const p=n=>String(n).padStart(2,'0');return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}`;}
 function field(body,label){for(const line of (body||'').replace(/\r/g,'\n').split('\n')){const t=line.trim();if(t.indexOf(label)===0){const idx=t.indexOf(':');return idx>=0?t.slice(idx+1).trim():t.replace(label,'').trim();}}return null;}
 
 function classifyMsg(parsed){

@@ -335,40 +335,55 @@ function rowsToObjects(rows){
   return rows.slice(1).map(r=>{
     const g=k=>c[k]>=0?(r[c[k]]||'').trim():'';
     return {order:g('order'),agent:g('agent'),customer:g('customer'),
-      received:g('received').replace(' ','T'),shipped:g('shipped').replace(' ','T'),
-      plate:g('plate'),model:g('model'),delivered:g('delivered').replace(' ','T')};
+      received:g('received'),shipped:g('shipped'),
+      plate:g('plate'),model:g('model'),delivered:g('delivered')};
   }).filter(o=>o.order);
 }
 
+// פרסר תאריך חסין — מטפל בכל הפורמטים שגוגל שיטס עשוי לייצא
+// ISO (2026-06-04), ISO+שעה, וגם פורמט ישראלי יום-קודם (4/6/2026, 04.06.2026, 4-6-2026)
+function parseDate(str){
+  if(!str)return null;
+  if(str instanceof Date)return isNaN(str)?null:str;
+  str=String(str).trim();
+  if(!str)return null;
+  // ISO: 2026-06-04 או 2026-06-04T14:45 / 2026-06-04 14:45
+  let m=str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2}))?/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3],m[4]?+m[4]:0,m[5]?+m[5]:0);
+  // ישראלי יום-קודם: 4/6/2026 · 04.06.2026 · 4-6-2026  (אופציונלי שעה)
+  m=str.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})(?:[T ](\d{1,2}):(\d{2}))?/);
+  if(m){let y=+m[3];if(y<100)y+=2000;return new Date(y,+m[2]-1,+m[1],m[4]?+m[4]:0,m[5]?+m[5]:0);}
+  const d=new Date(str);return isNaN(d)?null:d;   // גיבוי אחרון
+}
+function hasTimeStr(str){return typeof str==='string'&&(str.includes('T')||/\d{1,2}:\d{2}/.test(str));}
+
 function businessDays(fromISO){
-  const s=new Date(fromISO);if(isNaN(s))return 0;
+  const s=parseDate(fromISO);if(!s)return 0;
   const t=new Date();let d=new Date(s.getFullYear(),s.getMonth(),s.getDate());
   const e=new Date(t.getFullYear(),t.getMonth(),t.getDate());let n=0;
   while(d<e){d.setDate(d.getDate()+1);const w=d.getDay();if(w!==5&&w!==6)n++;}return n;
 }
-function hoursSince(iso){const d=new Date(iso);if(isNaN(d))return 0;return (Date.now()-d.getTime())/36e5;}
-function hoursBetween(a,b){const d1=new Date(a),d2=new Date(b);if(isNaN(d1)||isNaN(d2))return null;return (d2-d1)/36e5;}
+function hoursSince(iso){const d=parseDate(iso);if(!d)return 0;return (Date.now()-d.getTime())/36e5;}
+function hoursBetween(a,b){const d1=parseDate(a),d2=parseDate(b);if(!d1||!d2)return null;return (d2-d1)/36e5;}
 function fmtDate(iso){
-  if(!iso)return{date:'—',time:''};
-  const hasTime=typeof iso==='string'&&(iso.includes('T')||/\d{1,2}:\d{2}/.test(iso));
-  // תאריך בלבד — לפרסר כזמן מקומי כדי למנוע הזזת יום
-  const d=new Date(hasTime?iso:iso+'T00:00');
-  if(isNaN(d))return{date:iso||'—',time:''};
+  const d=parseDate(iso);
+  if(!d)return{date:iso||'—',time:''};
+  const hasTime=hasTimeStr(iso);
   const days=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];const p=n=>String(n).padStart(2,'0');
   return{date:`${days[d.getDay()]}׳ ${p(d.getDate())}/${p(d.getMonth()+1)}`,time:hasTime?`${p(d.getHours())}:${p(d.getMinutes())}`:''};}
-function monthKey(iso){const d=new Date(iso);if(isNaN(d))return'9999-99';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function monthKey(iso){const d=parseDate(iso);if(!d)return'9999-99';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 function monthName(key){if(key==='9999-99')return'ללא תאריך';const a=key.split('-');return `${HEB_MONTHS[+a[1]-1]} ${a[0]}`;}
 
 function computeStatus(r){
   const bd=businessDays(r.received);
-  if(r.delivered && !isNaN(new Date(r.delivered))){
+  if(r.delivered && parseDate(r.delivered)){
     const took=r.shipped?hoursBetween(r.shipped,r.delivered):null;
     return {phase:'done',label:'נמסר ✓',cls:'st-done',sort:0,flag:false,
       detail: took!=null?`מסירה ${Math.round(took)}ש' מהשילוח`:'נמסר'};
   }
   const flag = bd>10;   // עיכוב: מעל 10 ימי עסקים מרגע ההזמנה ועדיין לא נמסר
-  if(r.shipped && !isNaN(new Date(r.shipped))){
+  if(r.shipped && parseDate(r.shipped)){
     const h=hoursSince(r.shipped);
     let cls='st-ship',label='בהכנה למסירה';
     if(h>DELIVERY_WARN_H){cls='st-ship-alert';label='חריגה במסירה';}
@@ -395,7 +410,7 @@ function mergeByOrder(rows){
 function curMonthKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 // פתוח מקודם: לא נמסר, וההזמנה מחודש קלנדרי קודם לחודש הנוכחי
 function isCarryover(r){
-  if(r.delivered && !isNaN(new Date(r.delivered)))return false;
+  if(r.delivered && parseDate(r.delivered))return false;
   const mk=monthKey(r.received);
   if(mk==='9999-99')return false;
   return mk<curMonthKey();
@@ -443,7 +458,7 @@ function render(){
     let rowcls='';if(r._st.phase==='done')rowcls='row-done';else if(r._st.flag)rowcls='row-flag';
     if(carry)rowcls+=' row-carry';
     if(isDup)rowcls+=' row-dup';
-    const shipF=r.shipped&&!isNaN(new Date(r.shipped))?fmtDate(r.shipped):null;
+    const shipF=r.shipped&&parseDate(r.shipped)?fmtDate(r.shipped):null;
     const shipCell=shipF
       ?`<b>${shipF.date}</b><div class="sub2">${[shipF.time,r.plate?'<span class="plate">'+r.plate+'</span>':''].filter(Boolean).join(' · ')}</div>`
       :'<span style="color:var(--ink-dim)">—</span>';
@@ -518,7 +533,7 @@ function render(){
       const s=arr.filter(r=>r._st.phase==='ship').length;
       const d=arr.filter(r=>r._st.phase==='done').length;
       const f=arr.filter(r=>r._st.flag).length;
-      const delivered=arr.filter(r=>r.delivered&&r.shipped&&!isNaN(new Date(r.delivered))&&!isNaN(new Date(r.shipped)));
+      const delivered=arr.filter(r=>r.delivered&&r.shipped&&parseDate(r.delivered)&&parseDate(r.shipped));
       const avg=delivered.length?Math.round(delivered.reduce((x,r)=>x+hoursBetween(r.shipped,r.delivered),0)/delivered.length):null;
       tot.t+=arr.length;tot.p+=p;tot.s+=s;tot.d+=d;tot.f+=f;
       return `<tr>
@@ -652,7 +667,7 @@ async function handleFiles(files){
   ships.forEach(s=>{
     const o=(s.order||'').trim();const rec=existingMap[o];
     if(!rec)s._sh='noorder';
-    else if(rec.shipped&&!isNaN(new Date(rec.shipped)))s._sh='hasship';
+    else if(rec.shipped&&parseDate(rec.shipped))s._sh='hasship';
     else s._sh='ready';
   });
   const shipReady=ships.filter(s=>s._sh==='ready'||s._sh==='noorder');   // רק אלה שצריך להעתיק

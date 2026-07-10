@@ -340,20 +340,39 @@ function rowsToObjects(rows){
   }).filter(o=>o.order);
 }
 
-// פרסר תאריך חסין — מטפל בכל הפורמטים שגוגל שיטס עשוי לייצא
-// ISO (2026-06-04), ISO+שעה, וגם פורמט ישראלי יום-קודם (4/6/2026, 04.06.2026, 4-6-2026)
+// זיהוי אוטומטי של סדר התאריך (יום-קודם ישראלי מול חודש-קודם אמריקאי)
+let DATE_ORDER='dmy';
+function detectDateOrder(rows){
+  let dmy=0,mdy=0;
+  const scan=v=>{const m=String(v||'').match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-]\d{2,4}/);
+    if(m){const a=+m[1],b=+m[2];if(a>12&&b<=12)dmy++;else if(b>12&&a<=12)mdy++;}};
+  rows.forEach(r=>{scan(r.received);scan(r.shipped);scan(r.delivered);});
+  DATE_ORDER=mdy>dmy?'mdy':'dmy';   // ברירת מחדל: יום-קודם (ישראלי)
+}
+function inSaneRange(d){
+  if(!d||isNaN(d))return null;
+  const now=Date.now();
+  if(d.getTime()<now-2*365*864e5||d.getTime()>now+120*864e5)return null; // מחוץ לחלון סביר
+  return d;
+}
+// פרסר תאריך קפדני — מקבל רק פורמטים ברורים, דוחה זבל
 function parseDate(str){
   if(!str)return null;
-  if(str instanceof Date)return isNaN(str)?null:str;
-  str=String(str).trim();
-  if(!str)return null;
-  // ISO: 2026-06-04 או 2026-06-04T14:45 / 2026-06-04 14:45
+  if(str instanceof Date)return inSaneRange(str);
+  str=String(str).trim();if(!str)return null;
+  let y,mo,da,hh=0,mi=0,ok=false;
+  // ISO חד-משמעי: 2026-06-04 (עם/בלי שעה)
   let m=str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2}))?/);
-  if(m)return new Date(+m[1],+m[2]-1,+m[3],m[4]?+m[4]:0,m[5]?+m[5]:0);
-  // ישראלי יום-קודם: 4/6/2026 · 04.06.2026 · 4-6-2026  (אופציונלי שעה)
-  m=str.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})(?:[T ](\d{1,2}):(\d{2}))?/);
-  if(m){let y=+m[3];if(y<100)y+=2000;return new Date(y,+m[2]-1,+m[1],m[4]?+m[4]:0,m[5]?+m[5]:0);}
-  const d=new Date(str);return isNaN(d)?null:d;   // גיבוי אחרון
+  if(m){y=+m[1];mo=+m[2];da=+m[3];hh=m[4]?+m[4]:0;mi=m[5]?+m[5]:0;ok=true;}
+  else{
+    m=str.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})(?:[T ](\d{1,2}):(\d{2}))?/);
+    if(m){let a=+m[1],b=+m[2];y=+m[3];if(y<100)y+=2000;
+      if(DATE_ORDER==='mdy'){mo=a;da=b;}else{da=a;mo=b;}
+      hh=m[4]?+m[4]:0;mi=m[5]?+m[5]:0;ok=true;}
+  }
+  if(!ok)return null;                          // בלי fallback פרוץ
+  if(mo<1||mo>12||da<1||da>31)return null;     // חודש/יום לא תקינים
+  return inSaneRange(new Date(y,mo-1,da,hh,mi));
 }
 function hasTimeStr(str){return typeof str==='string'&&(str.includes('T')||/\d{1,2}:\d{2}/.test(str));}
 
@@ -723,7 +742,9 @@ async function load(){
   try{
     const res=await fetch(CSV_URL+(CSV_URL.includes('?')?'&':'?')+'t='+Date.now());
     if(!res.ok)throw new Error('HTTP '+res.status);
-    DATA=mergeByOrder(rowsToObjects(parseCSV(await res.text())));
+    const rawRows=rowsToObjects(parseCSV(await res.text()));
+    detectDateOrder(rawRows);
+    DATA=mergeByOrder(rawRows);
     if(!DATA.length){setState('הגיליון ריק או שהכותרות לא תואמות.',true);}
     else{buildChips();render();}
     const n=new Date();const p=x=>String(x).padStart(2,'0');

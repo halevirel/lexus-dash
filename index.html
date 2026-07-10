@@ -233,11 +233,11 @@ footer b{color:var(--accent-soft)}
     <div id="importResult"></div>
   </div>
 
+  <div class="controls" id="kpiMonths" style="margin-bottom:12px"></div>
   <section class="kpis" id="kpis"></section>
   <div class="controls" style="margin-bottom:12px">
     <div class="viewtoggle" id="viewToggle">
       <button class="vt active" data-v="active">📋 פתוחות</button>
-      <button class="vt" data-v="months">📅 לפי חודש</button>
       <button class="vt" data-v="agents">👥 לפי נציג</button>
     </div>
   </div>
@@ -316,7 +316,7 @@ const DELIVERY_WARN_H   = 72;
 
 const palette=['#c8a04f','#5aa9e6','#3fb27f','#d98ec0','#e0a13c','#9b8be6','#e2564d','#6ec6b0'];
 let DATA=[]; let agentColor={};
-let state={agent:'all',q:'',sortKey:'received',sortDir:-1,collapsed:{},view:'active',agentMonth:'__cur__'};
+let state={agent:'all',q:'',sortKey:'received',sortDir:-1,collapsed:{},view:'active',kpiMonth:'__cur__'};
 
 function parseCSV(text){
   const rows=[];let row=[],cur='',inQ=false;
@@ -407,16 +407,27 @@ function render(){
     .filter(r=>{if(!state.q)return true;const q=state.q.trim();
       return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q)||(r.plate||'').includes(q)||(r.model||'').includes(q);});
 
-  const scope=DATA.map(r=>({...r,_st:computeStatus(r)})).filter(r=>state.agent==='all'||r.agent===state.agent);
+  const scopeAll=DATA.map(r=>({...r,_st:computeStatus(r)})).filter(r=>state.agent==='all'||r.agent===state.agent);
+  // בורר חודש לקוביות
+  const kMonths=[...new Set(scopeAll.map(r=>monthKey(r.received)).filter(m=>m!=='9999-99'))].sort().reverse();
+  const kSel=state.kpiMonth==='__cur__'?curMonthKey():state.kpiMonth;
+  const scope=state.kpiMonth==='__all__'?scopeAll:scopeAll.filter(r=>monthKey(r.received)===kSel);
+  const kChip=(lbl,val,active)=>`<button class="chip ${active?'active':''}" data-km="${val}">${lbl}</button>`;
+  document.getElementById('kpiMonths').innerHTML=
+    kChip('החודש','__cur__',state.kpiMonth==='__cur__')+
+    kMonths.filter(m=>m!==curMonthKey()).map(m=>kChip(monthName(m),m,state.kpiMonth===m)).join('')+
+    kChip('הכל','__all__',state.kpiMonth==='__all__');
   const prep=scope.filter(r=>r._st.phase==='prep').length;
   const done=scope.filter(r=>r._st.phase==='done').length;
   const flags=scope.filter(r=>r._st.flag).length;
-  const total=scope.length;                                   // סה"כ כל העסקאות (כולל נמסרו) — לא יורד
+  const total=scope.length;
+  const kLabel=state.kpiMonth==='__all__'?'סה״כ עסקאות':(state.kpiMonth==='__cur__'?'סה״כ החודש':'סה״כ '+monthName(kSel));
   document.getElementById('kpis').innerHTML=`
-    <div class="kpi total"><div class="lbl">סה״כ עסקאות</div><div class="val">${total}</div></div>
+    <div class="kpi total"><div class="lbl">${kLabel}</div><div class="val">${total}</div></div>
     <div class="kpi"><div class="lbl">בהכנה</div><div class="val">${prep}</div></div>
     <div class="kpi ok"><div class="lbl">נמסרו</div><div class="val">${done}</div></div>
     <div class="kpi ${flags?'alert':''}"><div class="lbl">דגלים · מעל 10 ימי עסקים</div><div class="val">${flags}</div></div>`;
+  document.getElementById('kpiMonths').querySelectorAll('[data-km]').forEach(b=>{b.onclick=()=>{state.kpiMonth=b.dataset.km;render();};});
 
   const sortRows=arr=>arr.sort((a,b)=>{
     if(state.sortKey==='status'){if(a._st.sort!==b._st.sort)return (a._st.sort-b._st.sort)*state.sortDir;}
@@ -490,18 +501,11 @@ function render(){
   }
 
   if(state.view==='agents'){
-    // תצוגת "לפי נציג" — סיכום מספרים לכל נציג, לפי חודש קלנדרי נבחר
+    // תצוגת "לפי נציג" — סיכום מספרים לכל נציג, לפי בורר החודש העליון
     const allRows=DATA.map(r=>({...r,_st:computeStatus(r)}))
       .filter(r=>{if(!state.q)return true;const q=state.q.trim();return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q)||(r.plate||'').includes(q)||(r.model||'').includes(q);});
-    // חודשים זמינים
-    const months=[...new Set(allRows.map(r=>monthKey(r.received)).filter(m=>m!=='9999-99'))].sort().reverse();
-    const sel=state.agentMonth==='__cur__'?curMonthKey():state.agentMonth;
-    const scopeM = sel==='__all__' ? allRows : allRows.filter(r=>monthKey(r.received)===sel);
-    // בורר חודש
-    const chip=(lbl,val,active)=>`<button class="chip ${active?'active':''}" data-am="${val}">${lbl}</button>`;
-    let selUI=`<div class="controls" style="margin-bottom:14px">`+
-      chip('כל החודשים','__all__',state.agentMonth==='__all__')+
-      months.map(m=>chip(monthName(m),m,(state.agentMonth==='__cur__'?curMonthKey():state.agentMonth)===m)).join('')+`</div>`;
+    const sel=state.kpiMonth==='__cur__'?curMonthKey():state.kpiMonth;
+    const scopeM = state.kpiMonth==='__all__' ? allRows : allRows.filter(r=>monthKey(r.received)===sel);
     // קיבוץ לפי נציג
     const byAgent={};
     scopeM.forEach(r=>{const a=r.agent||'—';(byAgent[a]=byAgent[a]||[]).push(r);});
@@ -525,42 +529,11 @@ function render(){
     }).join('');
     const totRow=`<tr class="agent-total">
       <td><b>סה״כ</b></td>${cell(tot.t,'big')}${cell(tot.p)}${cell(tot.s,'c-ship')}${cell(tot.d,'c-ok')}${cell(tot.f||'',tot.f?'c-alert':'')}<td>—</td></tr>`;
-    cont.innerHTML=selUI+`<div class="tablecard"><table>
+    cont.innerHTML=`<div class="tablecard"><table>
       <thead><tr><th>נציג</th><th>סה״כ</th><th>בהכנה</th><th>בדרך</th><th>נמסרו</th><th>דגלים</th><th>זמן מסירה ממוצע</th></tr></thead>
       <tbody>${rowsHtml||'<tr><td colspan="7" style="text-align:center;color:var(--ink-dim);padding:30px">אין נתונים לחודש זה</td></tr>'}${rowsHtml?totRow:''}</tbody></table></div>`;
-    cont.querySelectorAll('[data-am]').forEach(b=>{b.onclick=()=>{state.agentMonth=b.dataset.am;render();};});
     return;
   }
-
-  // תצוגת "לפי חודש"
-  const groups={};
-  rows.forEach(r=>{const k=monthKey(r.received);(groups[k]=groups[k]||[]).push(r);});
-  const keys=Object.keys(groups).sort().reverse();
-
-  cont.innerHTML=keys.map(k=>{
-    const arr=sortRows(groups[k]);
-    const c={prep:0,ship:0,done:0,flag:0};
-    arr.forEach(r=>{c[r._st.phase]++;if(r._st.flag)c.flag++;});
-    const collapsed=state.collapsed[k]?'collapsed':'';
-    const mini=`<span class="s-prep">${c.prep} בהכנה</span><span class="s-ship">${c.ship} בדרך</span><span class="s-done">${c.done} נמסרו</span>${c.flag?`<span class="s-flag">${c.flag} דגל</span>`:''}`;
-    const body=arr.map(rowHtml).join('');
-    return `<div class="month-block ${collapsed}" data-mk="${k}">
-      <div class="month-bar">
-        <span class="caret">▼</span>
-        <span class="mname">${monthName(k)}</span>
-        <span class="mcount"><b style="color:var(--accent)">סה״כ ${arr.length}</b> · כולל נמסרו</span>
-        <span class="mmini">${mini}</span>
-      </div>
-      <div class="tablecard"><table>${tableHead}<tbody>${body}</tbody></table></div>
-    </div>`;
-  }).join('');
-
-  cont.querySelectorAll('.month-bar').forEach(bar=>{bar.onclick=()=>{
-    const blk=bar.closest('.month-block');const k=blk.dataset.mk;
-    state.collapsed[k]=!state.collapsed[k];blk.classList.toggle('collapsed');};});
-  cont.querySelectorAll('thead th[data-k]').forEach(th=>{th.onclick=()=>{
-    const k=th.dataset.k;if(state.sortKey===k)state.sortDir*=-1;else{state.sortKey=k;state.sortDir=(k==='received'||k==='shipped')?-1:1;}render();};});
-  cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
 }
 
 function syncToggle(){

@@ -77,11 +77,14 @@ tr.agent-total td{border-top:2px solid var(--line)}
 tr.agent-total .acount{color:var(--ink)}.tr.agent-total .acount.big{color:var(--accent)}
 
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.filterbar{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:16px;box-shadow:var(--shadow)}
+.filterbar .controls{margin-bottom:0}
+.filterbar .controls+.controls{margin-top:8px;padding-top:10px;border-top:1px solid var(--line)}
+.flabel{font-size:12px;font-weight:700;color:var(--ink-dim);margin-inline-end:4px;align-self:center}
 .chip{background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:500;cursor:pointer;transition:.18s;font-family:inherit}
 .chip:hover{border-color:var(--accent);color:var(--ink)}
 .chip.active{background:var(--accent);border-color:var(--accent);color:#1a1205;font-weight:700}
-.viewtoggle{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
-.viewtoggle .vt{background:none;border:none;color:var(--ink-dim);font-family:inherit;font-size:13.5px;font-weight:600;padding:7px 18px;border-radius:999px;cursor:pointer;transition:.15s}
+.viewtoggle{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}.viewtoggle .vt{background:none;border:none;color:var(--ink-dim);font-family:inherit;font-size:13.5px;font-weight:600;padding:7px 18px;border-radius:999px;cursor:pointer;transition:.15s}
 .viewtoggle .vt:hover{color:var(--ink)}
 .viewtoggle .vt.active{background:var(--accent);color:#fff;font-weight:700}
 .search{margin-inline-start:auto;position:relative}
@@ -233,7 +236,10 @@ footer b{color:var(--accent-soft)}
     <div id="importResult"></div>
   </div>
 
-  <div class="controls" id="kpiMonths" style="margin-bottom:12px"></div>
+  <div class="filterbar">
+    <div class="controls" id="kpiMonths"></div>
+    <div class="controls" id="agentChips"></div>
+  </div>
   <section class="kpis" id="kpis"></section>
   <div class="controls" style="margin-bottom:12px">
     <div class="viewtoggle" id="viewToggle">
@@ -241,7 +247,6 @@ footer b{color:var(--accent-soft)}
       <button class="vt" data-v="agents">👥 לפי נציג</button>
     </div>
   </div>
-  <div class="controls" id="agentChips"></div>
   <div class="controls" style="margin-top:-6px">
     <div class="search">
       <input id="q" type="text" placeholder="חיפוש לקוח / הזמנה / רכב…">
@@ -448,6 +453,7 @@ function render(){
   const scope=state.kpiMonth==='__all__'?scopeAll:scopeAll.filter(r=>monthKey(r.received)===kSel);
   const kChip=(lbl,val,active)=>`<button class="chip ${active?'active':''}" data-km="${val}">${lbl}</button>`;
   document.getElementById('kpiMonths').innerHTML=
+    '<span class="flabel">חודש:</span>'+
     kChip('החודש','__cur__',state.kpiMonth==='__cur__')+
     kMonths.filter(m=>m!==curMonthKey()).map(m=>kChip(monthName(m),m,state.kpiMonth===m)).join('')+
     kChip('הכל','__all__',state.kpiMonth==='__all__');
@@ -579,7 +585,7 @@ function buildChips(){  const agents=[...new Set(DATA.map(d=>d.agent))];
   agents.forEach((a,i)=>{if(!agentColor[a])agentColor[a]=palette[i%palette.length];});
   const c=document.getElementById('agentChips');
   const mk=(l,v)=>`<button class="chip ${state.agent===v?'active':''}" data-a="${v}">${l}</button>`;
-  c.innerHTML=mk('כל הנציגים','all')+agents.map(a=>mk(a,a)).join('');
+  c.innerHTML='<span class="flabel">נציג:</span>'+mk('כל הנציגים','all')+agents.map(a=>mk(a,a)).join('');
   c.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{state.agent=ch.dataset.a;buildChips();render();});
 }
 function setState(html,isErr){const s=document.getElementById('state');

@@ -305,6 +305,7 @@ footer b{color:var(--accent-soft)}
         <option value="נפתר">נפתר / סגור</option>
       </select>
     </div>
+    <div class="imp-note" id="nHint" style="display:none;color:var(--carry);margin:-6px 0 12px">🔄 בחירה זו תאפס את פרטי השילוח הקיימים (תאריך/לוחית/דגם) ותחזיר את ההזמנה למצב "ממתין לשילוח" — עד שתייבא מייל שילוח חדש עבור הרכב החלופי.</div>
     <div class="field" style="align-items:flex-start"><label>הערה</label>
       <textarea id="nText" rows="2" placeholder="למשל: התגלתה שריטה בדלת, הוזמן רכב חלופי" style="flex:1;background:#f0f3f8;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 12px;font-family:inherit;font-size:13.5px;resize:vertical"></textarea>
     </div>
@@ -465,14 +466,21 @@ function computeStatus(r){
 }
 
 // מיזוג שורות לפי מספר הזמנה — מאחד נתוני הזמנה + שילוח + מסירה לעסקה אחת
+const RESET_MARK='#RESET#';
 function mergeByOrder(rows){
   const map={};
   rows.forEach(r=>{
     const o=(r.order||'').trim();if(!o)return;
-    if(!map[o])map[o]={order:o,agent:'',customer:'',received:'',shipped:'',plate:'',model:'',delivered:'',note:'',status:'',_notes:[],_receivedRows:0};
+    if(!map[o])map[o]={order:o,agent:'',customer:'',received:'',shipped:'',plate:'',model:'',delivered:'',note:'',status:'',_notes:[],_receivedRows:0,_awaitingReplacement:false};
     const m=map[o];
     if(r.received)m._receivedRows++;
-    ['agent','customer','received','shipped','plate','model','delivered'].forEach(k=>{if(!m[k]&&r[k])m[k]=r[k];});
+    if((r.shipped||'').trim()===RESET_MARK){
+      // שורת "החלפה" — מאפסת שילוח/לוחית/דגם/מסירה קודמים, ההזמנה חוזרת להמתין למייל שילוח חדש
+      m.shipped='';m.plate='';m.model='';m.delivered='';m._awaitingReplacement=true;
+    }else{
+      ['agent','customer','received','shipped','plate','model','delivered'].forEach(k=>{if(!m[k]&&r[k])m[k]=r[k];});
+      if(r.shipped)m._awaitingReplacement=false;       // הגיע מייל שילוח חדש בפועל — ההמתנה הסתיימה
+    }
     if(r.status)m.status=r.status;                    // סטטוס — האחרון גובר
     if(r.note)m._notes.push(r.note);                  // הערות — נצברות
   });
@@ -542,9 +550,10 @@ function render(){
       : `<button class="btn-deliver" data-order="${r.order}">סמן כנמסר</button>`;
     const noteBtn=`<button class="btn-note" data-order="${r.order}" title="הערה / סטטוס">📝</button>`;
     const carryTag=carry?`<span class="carry-tag">📂 פתוח · ${HEB_MONTHS[+monthKey(r.received).split('-')[1]-1]}</span>`:'';
+    const replaceTag=r._awaitingReplacement?`<span class="carry-tag" style="background:var(--ship)">🔄 ממתין לשילוח חלופי</span>`:'';
     const noteLine=r.note?`<div class="sub2 noteline">📝 ${r.note}</div>`:'';
     return `<tr class="${rowcls}">
-      <td><span class="ordnum">${r.order}</span>${carryTag}${isDup?'<span class="dup-tag">כפילות</span>':''}</td>
+      <td><span class="ordnum">${r.order}</span>${carryTag}${replaceTag}${isDup?'<span class="dup-tag">כפילות</span>':''}</td>
       <td><span class="agent-tag"><span class="dot" style="background:${agentColor[r.agent]||'#888'}"></span>${r.agent}</span></td>
       <td class="cust">${r.customer}${r.model?'<div class="sub2">'+r.model+'</div>':''}${noteLine}</td>
       <td class="when hide-sm"><b>${rec.date}</b>${rec.time?'<div class="sub2">'+rec.time+'</div>':''}</td>
@@ -701,16 +710,18 @@ function openNote(order){
   document.getElementById('nOrder').textContent=order;
   document.getElementById('nStatus').value='';
   document.getElementById('nText').value='';
+  document.getElementById('nHint').style.display='none';
   updateNotePaste();
   document.getElementById('noteBg').classList.add('open');
 }
 function noteRow(){
   const note=document.getElementById('nText').value.replace(/\t/g,' ').replace(/\n/g,' ').trim();
   const status=document.getElementById('nStatus').value;
-  return [noteOrder,'','','','','','','',note,status].join('\t');
+  const shipCol=status==='החלפה'?RESET_MARK:'';   // מאפס שילוח קודם בגיליון — ההזמנה תחכה למייל שילוח חדש
+  return [noteOrder,'','','',shipCol,'','','',note,status].join('\t');
 }
 function updateNotePaste(){document.getElementById('nPaste').textContent=noteRow();}
-document.getElementById('nStatus').oninput=updateNotePaste;
+document.getElementById('nStatus').oninput=()=>{updateNotePaste();document.getElementById('nHint').style.display=document.getElementById('nStatus').value==='החלפה'?'block':'none';};
 document.getElementById('nText').oninput=updateNotePaste;
 document.getElementById('nCancel').onclick=()=>document.getElementById('noteBg').classList.remove('open');
 document.getElementById('noteBg').onclick=e=>{if(e.target.id==='noteBg')document.getElementById('noteBg').classList.remove('open');};

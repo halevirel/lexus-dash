@@ -139,6 +139,14 @@ tbody tr:hover{background:rgba(200,160,79,.05)}
 .st-ship-warn{background:rgba(224,161,60,.16);color:var(--warn)}
 .st-ship-alert{background:rgba(226,86,77,.16);color:var(--alert)}
 .st-done{background:rgba(63,178,127,.14);color:var(--ok)}
+.st-issue{background:rgba(210,63,54,.16);color:var(--alert)}
+tr.row-issue{box-shadow:inset 4px 0 0 var(--alert);background:rgba(210,63,54,.05)}
+tr.row-issue:hover{background:rgba(210,63,54,.10)}
+.stage-bar.s-issue{background:rgba(210,63,54,.15);color:var(--alert)}
+.noteline{color:var(--ship)!important;font-style:italic;margin-top:3px;max-width:280px}
+.rowact{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn-note{background:none;border:1px solid var(--line);color:var(--ink-dim);font-size:13px;padding:5px 9px;border-radius:999px;cursor:pointer;font-family:inherit;transition:.15s;line-height:1}
+.btn-note:hover{border-color:var(--ship);background:rgba(47,127,199,.08)}
 tr.row-flag{background:rgba(226,86,77,.06)}
 tr.row-flag:hover{background:rgba(226,86,77,.10)}
 tr.row-done{opacity:.62}
@@ -282,7 +290,32 @@ footer b{color:var(--accent-soft)}
   </div>
 </div>
 
-<script>
+<div class="modal-bg" id="noteBg">
+  <div class="modal">
+    <h3>הערה / סטטוס</h3>
+    <p>כתוב הערה ובחר סטטוס, ואז העתק והדבק בתחתית ה‑Google Sheet כשורה חדשה. סטטוס "ליקוי / בטיפול / החלפה" מחזיר את ההזמנה לראש הרשימה עד שתבחר "נפתר".</p>
+    <div class="field"><label>הזמנה</label><div class="mono" id="nOrder" style="flex:1;margin:0"></div></div>
+    <div class="field"><label>סטטוס</label>
+      <select id="nStatus" style="flex:1;background:#f0f3f8;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 12px;font-family:inherit;font-size:13.5px">
+        <option value="">רגיל (בלי שינוי)</option>
+        <option value="ליקוי">ליקוי</option>
+        <option value="בטיפול">בטיפול</option>
+        <option value="החלפה">החלפת רכב</option>
+        <option value="עיכוב">עיכוב</option>
+        <option value="נפתר">נפתר / סגור</option>
+      </select>
+    </div>
+    <div class="field" style="align-items:flex-start"><label>הערה</label>
+      <textarea id="nText" rows="2" placeholder="למשל: התגלתה שריטה בדלת, הוזמן רכב חלופי" style="flex:1;background:#f0f3f8;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 12px;font-family:inherit;font-size:13.5px;resize:vertical"></textarea>
+    </div>
+    <div class="mono" id="nPaste"></div>
+    <div class="modal-actions">
+      <button class="m-copy" id="nCopy">העתק שורה</button>
+      <button class="m-cancel" id="nCancel">סגור</button>
+    </div>
+  </div>
+</div>
+
 /* ===== מסך נעילה ===== */
 const ACCESS_CODE = "5322";          // קוד הגישה — אפשר לשנות כאן
 const REMEMBER_DAYS = 30;            // כמה ימים לזכור מכשיר
@@ -341,12 +374,14 @@ function rowsToObjects(rows){
   const head=rows[0].map(h=>h.trim().toLowerCase());
   const ix=n=>head.indexOf(n);
   const c={order:ix('order'),agent:ix('agent'),customer:ix('customer'),received:ix('received'),
-           shipped:ix('shipped'),plate:ix('plate'),model:ix('model'),delivered:ix('delivered')};
+           shipped:ix('shipped'),plate:ix('plate'),model:ix('model'),delivered:ix('delivered'),
+           note:ix('note'),status:ix('status')};
   return rows.slice(1).map(r=>{
     const g=k=>c[k]>=0?(r[c[k]]||'').trim():'';
     return {order:g('order'),agent:g('agent'),customer:g('customer'),
       received:g('received'),shipped:g('shipped'),
-      plate:g('plate'),model:g('model'),delivered:g('delivered')};
+      plate:g('plate'),model:g('model'),delivered:g('delivered'),
+      note:g('note'),status:g('status')};
   }).filter(o=>o.order);
 }
 
@@ -404,8 +439,14 @@ function monthKey(iso){const d=parseDate(iso);if(!d)return'9999-99';return `${d.
 const HEB_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 function monthName(key){if(key==='9999-99')return'ללא תאריך';const a=key.split('-');return `${HEB_MONTHS[+a[1]-1]} ${a[0]}`;}
 
+const RESOLVED_STATUS=['נפתר','תקין','הושלם','סגור',''];
 function computeStatus(r){
   const bd=businessDays(r.received);
+  // סטטוס ידני שאינו "נפתר" → ליקוי/בטיפול פתוח, בראש, גם אם נמסר
+  const st=(r.status||'').trim();
+  if(st && !RESOLVED_STATUS.includes(st)){
+    return {phase:'issue',label:st,cls:'st-issue',sort:6,flag:true,detail:'דורש טיפול'};
+  }
   if(r.delivered && parseDate(r.delivered)){
     const took=r.shipped?hoursBetween(r.shipped,r.delivered):null;
     return {phase:'done',label:'נמסר ✓',cls:'st-done',sort:0,flag:false,
@@ -427,13 +468,15 @@ function mergeByOrder(rows){
   const map={};
   rows.forEach(r=>{
     const o=(r.order||'').trim();if(!o)return;
-    if(!map[o])map[o]={order:o,agent:'',customer:'',received:'',shipped:'',plate:'',model:'',delivered:'',_receivedRows:0};
+    if(!map[o])map[o]={order:o,agent:'',customer:'',received:'',shipped:'',plate:'',model:'',delivered:'',note:'',status:'',_notes:[],_receivedRows:0};
     const m=map[o];
     if(r.received)m._receivedRows++;
     ['agent','customer','received','shipped','plate','model','delivered'].forEach(k=>{if(!m[k]&&r[k])m[k]=r[k];});
+    if(r.status)m.status=r.status;                    // סטטוס — האחרון גובר
+    if(r.note)m._notes.push(r.note);                  // הערות — נצברות
   });
   const out=Object.values(map);
-  out.forEach(m=>{m._dup=m._receivedRows>1;});   // כפילות אמיתית = ההזמנה הוזנה יותר מפעם אחת
+  out.forEach(m=>{m._dup=m._receivedRows>1;m.note=m._notes.join(' · ');});
   return out;
 }
 function curMonthKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
@@ -449,7 +492,7 @@ function render(){
   let rows=DATA.map(r=>({...r,_st:computeStatus(r)}))
     .filter(r=>state.agent==='all'||r.agent===state.agent)
     .filter(r=>{if(!state.q)return true;const q=state.q.trim();
-      return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q)||(r.plate||'').includes(q)||(r.model||'').includes(q);});
+      return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q)||(r.plate||'').includes(q)||(r.model||'').includes(q)||(r.note||'').includes(q);});
 
   const scopeAll=DATA.map(r=>({...r,_st:computeStatus(r)})).filter(r=>state.agent==='all'||r.agent===state.agent);
   // בורר חודש לקוביות
@@ -488,22 +531,25 @@ function render(){
     let rowcls='';if(r._st.phase==='done')rowcls='row-done';else if(r._st.flag)rowcls='row-flag';
     if(carry)rowcls+=' row-carry';
     if(isDup)rowcls+=' row-dup';
+    if(r._st.phase==='issue')rowcls+=' row-issue';
     const shipF=r.shipped&&parseDate(r.shipped)?fmtDate(r.shipped):null;
     const shipCell=shipF
       ?`<b>${shipF.date}</b><div class="sub2">${[shipF.time,r.plate?'<span class="plate">'+r.plate+'</span>':''].filter(Boolean).join(' · ')}</div>`
       :'<span style="color:var(--ink-dim)">—</span>';
-    const action=r._st.phase==='done'
+    const deliverBtn=r._st.phase==='done'
       ? `<span class="status st-done">${fmtDate(r.delivered).date}</span>`
       : `<button class="btn-deliver" data-order="${r.order}">סמן כנמסר</button>`;
+    const noteBtn=`<button class="btn-note" data-order="${r.order}" title="הערה / סטטוס">📝</button>`;
     const carryTag=carry?`<span class="carry-tag">📂 פתוח · ${HEB_MONTHS[+monthKey(r.received).split('-')[1]-1]}</span>`:'';
+    const noteLine=r.note?`<div class="sub2 noteline">📝 ${r.note}</div>`:'';
     return `<tr class="${rowcls}">
       <td><span class="ordnum">${r.order}</span>${carryTag}${isDup?'<span class="dup-tag">כפילות</span>':''}</td>
       <td><span class="agent-tag"><span class="dot" style="background:${agentColor[r.agent]||'#888'}"></span>${r.agent}</span></td>
-      <td class="cust">${r.customer}${r.model?'<div class="sub2">'+r.model+'</div>':''}</td>
+      <td class="cust">${r.customer}${r.model?'<div class="sub2">'+r.model+'</div>':''}${noteLine}</td>
       <td class="when hide-sm"><b>${rec.date}</b>${rec.time?'<div class="sub2">'+rec.time+'</div>':''}</td>
       <td class="when">${shipCell}</td>
       <td><span class="status ${r._st.cls}">${r._st.label}</span><div class="sub2">${r._st.detail}</div></td>
-      <td>${action}</td>
+      <td><div class="rowact">${deliverBtn}${noteBtn}</div></td>
     </tr>`;
   };
   const tableHead=`<thead><tr>
@@ -527,7 +573,7 @@ function render(){
         cont.innerHTML=`<div class="stage-block">
           <div class="stage-bar s-search"><span class="stage-title">🔎 תוצאות חיפוש · כל הסטטוסים</span><span class="stage-count">${res.length}</span></div>
           <div class="tablecard"><table>${tableHead}<tbody>${res.map(rowHtml).join('')}</tbody></table></div></div>`;
-        cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
+        cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});cont.querySelectorAll('.btn-note').forEach(b=>{b.onclick=()=>openNote(b.dataset.order);});
       }
       return;
     }
@@ -540,17 +586,18 @@ function render(){
     const viewingCurrent=(state.kpiMonth==='__cur__'||selM===curMonthKey());
     const inScope=r=>state.kpiMonth==='__all__'||monthKey(r.received)===selM;
     // קיבוץ לפי שלב
-    const g1=[],g2=[],g3=[];
+    const g0=[],g1=[],g2=[],g3=[];
     rows.filter(r=>r._st.phase!=='done').forEach(r=>{
-      if(r._st.flag)g1.push(r);                              // דגלים — תמיד מוצגים
-      else if(viewingCurrent&&isCarryover(r))g1.push(r);     // פתוח מחודש קודם — מוצג בתצוגת "החודש"
+      if(r._st.phase==='issue')g0.push(r);                  // בטיפול / ליקויים — תמיד בראש
+      else if(r._st.flag)g1.push(r);                        // דגלים — תמיד מוצגים
+      else if(viewingCurrent&&isCarryover(r))g1.push(r);    // פתוח מחודש קודם — מוצג בתצוגת "החודש"
       else if(inScope(r)){r._st.phase==='ship'?g2.push(r):g3.push(r);}  // בטווח החודש — לפי שלב
     });
-    g1.sort(byUrg);g2.sort(byUrg);g3.sort(byUrg);
+    g0.sort(byUrg);g1.sort(byUrg);g2.sort(byUrg);g3.sort(byUrg);
     // נמסרו — בטווח החודש הנבחר
     const done=rows.filter(r=>r._st.phase==='done'&&inScope(r))
       .sort((a,b)=>{const da=parseDate(a.delivered),db=parseDate(b.delivered);return (db?db.getTime():0)-(da?da.getTime():0);});
-    if(!g1.length&&!g2.length&&!g3.length&&!done.length){
+    if(!g0.length&&!g1.length&&!g2.length&&!g3.length&&!done.length){
       cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">אין עסקאות בטווח שנבחר</div></div>';
       return;
     }
@@ -565,11 +612,12 @@ function render(){
         <div class="stage-bar s-done2" style="cursor:pointer"><span class="caret">▼</span><span class="stage-title">✅ נמסרו</span><span class="stage-count">${done.length}</span></div>
         <div class="tablecard donebody"><table>${tableHead}<tbody>${done.map(rowHtml).join('')}</tbody></table></div>
       </div>`:'';
-    cont.innerHTML = section('🚩 דגלים · פתוח מחודש קודם',g1,'s-urgent')
+    cont.innerHTML = section('⚠️ בטיפול · ליקויים',g0,'s-issue')
+      + section('🚩 דגלים · פתוח מחודש קודם',g1,'s-urgent')
       + section('🚚 בדרך · להכנת מסירה',g2,'s-transit')
       + section('🔧 בהכנה',g3,'s-prepst')
       + doneSection;
-    cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
+    cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});cont.querySelectorAll('.btn-note').forEach(b=>{b.onclick=()=>openNote(b.dataset.order);});
     const dblk=cont.querySelector('[data-done]');
     if(dblk)dblk.querySelector('.stage-bar').onclick=()=>{state.collapsed['__done__']=!doneCollapsed;render();};
     return;
@@ -578,7 +626,7 @@ function render(){
   if(state.view==='agents'){
     // תצוגת "לפי נציג" — סיכום מספרים לכל נציג, לפי בורר החודש העליון
     const allRows=DATA.map(r=>({...r,_st:computeStatus(r)}))
-      .filter(r=>{if(!state.q)return true;const q=state.q.trim();return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q)||(r.plate||'').includes(q)||(r.model||'').includes(q);});
+      .filter(r=>{if(!state.q)return true;const q=state.q.trim();return r.customer.includes(q)||r.order.includes(q)||r.agent.includes(q)||(r.plate||'').includes(q)||(r.model||'').includes(q)||(r.note||'').includes(q);});
     const sel=state.kpiMonth==='__cur__'?curMonthKey():state.kpiMonth;
     const scopeM = state.kpiMonth==='__all__' ? allRows : allRows.filter(r=>monthKey(r.received)===sel);
     // קיבוץ לפי נציג
@@ -642,6 +690,32 @@ document.getElementById('modalBg').onclick=e=>{if(e.target.id==='modalBg')docume
 document.getElementById('mCopy').onclick=()=>{
   const v=deliverRow();try{navigator.clipboard.writeText(v);}catch(e){}
   const b=document.getElementById('mCopy');b.textContent='✓ הועתק — הדבק בתחתית ה‑Sheet';
+  setTimeout(()=>{b.textContent='העתק שורה';},2500);
+};
+
+// מודאל הערה / סטטוס
+let noteOrder=null;
+function openNote(order){
+  noteOrder=order;
+  document.getElementById('nOrder').textContent=order;
+  document.getElementById('nStatus').value='';
+  document.getElementById('nText').value='';
+  updateNotePaste();
+  document.getElementById('noteBg').classList.add('open');
+}
+function noteRow(){
+  const note=document.getElementById('nText').value.replace(/\t/g,' ').replace(/\n/g,' ').trim();
+  const status=document.getElementById('nStatus').value;
+  return [noteOrder,'','','','','','','',note,status].join('\t');
+}
+function updateNotePaste(){document.getElementById('nPaste').textContent=noteRow();}
+document.getElementById('nStatus').oninput=updateNotePaste;
+document.getElementById('nText').oninput=updateNotePaste;
+document.getElementById('nCancel').onclick=()=>document.getElementById('noteBg').classList.remove('open');
+document.getElementById('noteBg').onclick=e=>{if(e.target.id==='noteBg')document.getElementById('noteBg').classList.remove('open');};
+document.getElementById('nCopy').onclick=()=>{
+  const v=noteRow();try{navigator.clipboard.writeText(v);}catch(e){}
+  const b=document.getElementById('nCopy');b.textContent='✓ הועתק — הדבק בתחתית ה‑Sheet';
   setTimeout(()=>{b.textContent='העתק שורה';},2500);
 };
 

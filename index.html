@@ -99,6 +99,11 @@ tr.agent-total .acount{color:var(--ink)}.tr.agent-total .acount.big{color:var(--
 .stage-bar.s-urgent{background:rgba(210,63,54,.13);color:var(--alert)}
 .stage-bar.s-transit{background:rgba(47,127,199,.13);color:var(--ship)}
 .stage-bar.s-prepst{background:rgba(184,144,47,.14);color:var(--accent-soft)}
+.stage-bar.s-search{background:rgba(47,127,199,.13);color:var(--ship)}
+.stage-bar.s-done2{background:rgba(31,158,98,.12);color:var(--ok)}
+.stage-bar.s-done2 .caret{transition:transform .2s;font-size:12px}
+.stage-block.collapsed .caret{transform:rotate(-90deg)}
+.stage-block.collapsed .tablecard{display:none}
 .month-bar{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:13px 18px;cursor:pointer;transition:.15s;user-select:none}
 .month-bar:hover{border-color:var(--accent)}
 .month-bar .caret{transition:transform .2s;color:var(--accent);font-size:13px}
@@ -511,32 +516,62 @@ function render(){
   document.getElementById('state').style.display='none';
 
   if(state.view==='active'){
-    // תצוגת "פתוחות" — כל מה שלא נמסר, מקובץ לפי שלב
-    const open=rows.filter(r=>r._st.phase!=='done');
-    if(!open.length){
-      cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">🎉 אין עסקאות פתוחות — הכל נמסר</div></div>';
+    // כשמחפשים — להציג את כל התוצאות (כולל נמסרו) כרשימה שטוחה, כדי שאפשר למצוא כל לקוח
+    if(state.q && state.q.trim()){
+      const res=rows.slice().sort((a,b)=>{
+        if(b._st.sort!==a._st.sort)return b._st.sort-a._st.sort;
+        return 0;});
+      if(!res.length){
+        cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">לא נמצאו תוצאות לחיפוש</div></div>';
+      }else{
+        cont.innerHTML=`<div class="stage-block">
+          <div class="stage-bar s-search"><span class="stage-title">🔎 תוצאות חיפוש · כל הסטטוסים</span><span class="stage-count">${res.length}</span></div>
+          <div class="tablecard"><table>${tableHead}<tbody>${res.map(rowHtml).join('')}</tbody></table></div></div>`;
+        cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
+      }
       return;
     }
     const byUrg=(a,b)=>{
       if(b._st.sort!==a._st.sort)return b._st.sort-a._st.sort;
       const ah=a.shipped?hoursSince(a.shipped):-1,bh=b.shipped?hoursSince(b.shipped):-1;return bh-ah;
     };
-    // קיבוץ לפי שלב — כל פריט בקבוצה אחת בלבד
+    // סינון לפי בורר החודש העליון
+    const selM=state.kpiMonth==='__cur__'?curMonthKey():state.kpiMonth;
+    const viewingCurrent=(state.kpiMonth==='__cur__'||selM===curMonthKey());
+    const inScope=r=>state.kpiMonth==='__all__'||monthKey(r.received)===selM;
+    // קיבוץ לפי שלב
     const g1=[],g2=[],g3=[];
-    open.forEach(r=>{
-      if(r._st.flag||isCarryover(r))g1.push(r);        // דגלים / פתוח מחודש קודם
-      else if(r._st.phase==='ship')g2.push(r);          // בדרך
-      else g3.push(r);                                   // בהכנה
+    rows.filter(r=>r._st.phase!=='done').forEach(r=>{
+      if(r._st.flag)g1.push(r);                              // דגלים — תמיד מוצגים
+      else if(viewingCurrent&&isCarryover(r))g1.push(r);     // פתוח מחודש קודם — מוצג בתצוגת "החודש"
+      else if(inScope(r)){r._st.phase==='ship'?g2.push(r):g3.push(r);}  // בטווח החודש — לפי שלב
     });
     g1.sort(byUrg);g2.sort(byUrg);g3.sort(byUrg);
+    // נמסרו — בטווח החודש הנבחר
+    const done=rows.filter(r=>r._st.phase==='done'&&inScope(r))
+      .sort((a,b)=>{const da=parseDate(a.delivered),db=parseDate(b.delivered);return (db?db.getTime():0)-(da?da.getTime():0);});
+    if(!g1.length&&!g2.length&&!g3.length&&!done.length){
+      cont.innerHTML='<div class="tablecard"><div class="state" style="padding:40px">אין עסקאות בטווח שנבחר</div></div>';
+      return;
+    }
     const section=(title,arr,cls)=>arr.length?`<div class="stage-block">
         <div class="stage-bar ${cls}"><span class="stage-title">${title}</span><span class="stage-count">${arr.length}</span></div>
         <div class="tablecard"><table>${tableHead}<tbody>${arr.map(rowHtml).join('')}</tbody></table></div>
       </div>`:'';
+    // נמסרו מקופל כברירת מחדל רק בתצוגת "החודש"; בחודש קודם/הכל — פתוח כדי לראות פירוט
+    const doneDefaultCollapsed = viewingCurrent && state.kpiMonth!=='__all__';
+    const doneCollapsed = state.collapsed['__done__']===undefined ? doneDefaultCollapsed : state.collapsed['__done__'];
+    const doneSection=done.length?`<div class="stage-block ${doneCollapsed?'collapsed':''}" data-done="1">
+        <div class="stage-bar s-done2" style="cursor:pointer"><span class="caret">▼</span><span class="stage-title">✅ נמסרו</span><span class="stage-count">${done.length}</span></div>
+        <div class="tablecard donebody"><table>${tableHead}<tbody>${done.map(rowHtml).join('')}</tbody></table></div>
+      </div>`:'';
     cont.innerHTML = section('🚩 דגלים · פתוח מחודש קודם',g1,'s-urgent')
       + section('🚚 בדרך · להכנת מסירה',g2,'s-transit')
-      + section('🔧 בהכנה',g3,'s-prepst');
+      + section('🔧 בהכנה',g3,'s-prepst')
+      + doneSection;
     cont.querySelectorAll('.btn-deliver').forEach(b=>{b.onclick=()=>openDeliver(b.dataset.order);});
+    const dblk=cont.querySelector('[data-done]');
+    if(dblk)dblk.querySelector('.stage-bar').onclick=()=>{state.collapsed['__done__']=!doneCollapsed;render();};
     return;
   }
 
